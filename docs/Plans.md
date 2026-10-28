@@ -290,7 +290,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 8: FastAPI REST API, SSE Streaming & Middleware
 
-### [ ] Task 8.1: API Schemas & RFC 7807 Exception Handlers
+### [x] Task 8.1: API Schemas & RFC 7807 Exception Handlers
 - **Objective:** Create API request/response Pydantic models and global RFC 7807 error formatters.
 - **Reference Docs:** `docs/API.md` (Section 2: Endpoints & Section 3: RFC 7807), `docs/SECURITY.md` (Section 4.2).
 - **Target Files:**
