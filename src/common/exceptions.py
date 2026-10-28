@@ -135,3 +135,21 @@ class ConfigurationError(BaseRAGException):
             title="Configuration Error",
             detail=detail,
         )
+
+
+class AuthenticationError(BaseRAGException):
+    """Raised when authentication credentials are missing or invalid."""
+
+    def __init__(
+        self,
+        message: str = "Invalid or missing authentication credentials",
+        detail: str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code="ERR_AUTHENTICATION_FAILED",
+            status_code=401,
+            title="Authentication Failed",
+            detail=detail,
+        )
+

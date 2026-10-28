@@ -315,7 +315,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Redis-based sliding-window rate limiter (60 requests/minute per IP).
 - **Verification:** `pytest tests/unit/test_middleware.py -v`
 
-### [ ] Task 8.3: SSE Streaming Endpoint (`/api/v1/query/stream`)
+### [x] Task 8.3: SSE Streaming Endpoint (`/api/v1/query/stream`)
 - **Objective:** Implement real-time Server-Sent Events (SSE) streaming endpoint with LangGraph step updates.
 - **Reference Docs:** `docs/API.md` (Section 2.2: Streaming Contract), `docs/UX_FLOWS.md` (Flow 1).
 - **Target Files:**
