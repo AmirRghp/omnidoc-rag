@@ -1,0 +1,392 @@
+[
+  {
+    "id": "eval-fa-01",
+    "query": "کاربرد فلگ --ipc=host هنگام اجرای کانتینر داکر چیست و چه ریسک امنیتی دارد؟",
+    "language": "fa",
+    "domain": "docker",
+    "category": "flag_in_persian",
+    "contexts": [
+      "Using --ipc=host shares the host system's IPC namespace (/dev/shm) directly with the container. While useful for shared-memory intensive workloads like PyTorch DataLoaders or PostgreSQL, it removes IPC isolation between the container and host processes."
+    ],
+    "ground_truth": "فلگ `--ipc=host` فضای نام IPC و حافظه مشترک میزبان (`/dev/shm`) را مستقیماً با کانتینر به اشتراک می‌گذارد. این کار برای پردازش‌های نیازمند حافظه مشترک مفید است اما ایزولاسیون امنیتی حافظه بین کانتینر و پردازش‌های میزبان را از بین می‌برد.",
+    "reference_source": "docker_cli_run.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-02",
+    "query": "نحوه تنظیم network_mode در فایل docker-compose.yml برای اتصال مستقیم به شبکه میزبان چگونه است؟",
+    "language": "fa",
+    "domain": "docker",
+    "category": "flag_in_persian",
+    "contexts": [
+      "In Docker Compose, setting `network_mode: \"host\"` attaches the service container directly to the host's network stack without network address translation (NAT), binding ports directly on the host interface."
+    ],
+    "ground_truth": "برای اتصال مستقیم سرویس به پشته شبکه میزبان در داکر کامپوز، باید مقدار `network_mode: \"host\"` را در تعریف سرویس داخل فایل `docker-compose.yml` قرار دهید تا پورت‌ها بدون لایه NAT مستقیماً روی اینترفیس میزبان باز شوند.",
+    "reference_source": "docker_compose_file_spec.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-03",
+    "query": "علت بروز خطای 502 Bad Gateway در Nginx هنگام استفاده به عنوان Reverse Proxy در داکر چیست؟",
+    "language": "fa",
+    "domain": "docker",
+    "category": "error_log",
+    "contexts": [
+      "HTTP 502 Bad Gateway in a Dockerized Nginx reverse proxy occurs when Nginx cannot reach the upstream application container. Common causes include the upstream service binding to 127.0.0.1 instead of 0.0.0.0, mismatched Docker bridge networks, or the upstream container failing healthchecks."
+    ],
+    "ground_truth": "خطای `502 Bad Gateway` در Nginx زمانی رخ می‌دهد که کانتینر Nginx نتواند به سرویس upstream متصل شود؛ دلایل اصلی شامل بایند شدن برنامه روی `127.0.0.1` به جای `0.0.0.0`، قرار نداشتن هر دو کانتینر در یک شبکه مشترک داکر، یا متوقف بودن کانتینر مقصد است.",
+    "reference_source": "nginx_reverse_proxy_docker.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-04",
+    "query": "چرا اجرای کانتینرهای داکر با کاربر root خطرناک است و چگونه در Dockerfile کاربر غیر روت تعریف کنیم؟",
+    "language": "fa",
+    "domain": "docker",
+    "category": "standard",
+    "contexts": [
+      "Running containers as root (UID 0) increases the risk of container breakout attacks gaining host root privileges. Best practice is to create a dedicated group and user with `groupadd -r appuser && useradd -r -g appuser appuser` and switch execution context via the `USER appuser` instruction in the Dockerfile."
+    ],
+    "ground_truth": "اجرای کانتینر با کاربر `root` در صورت فرار از کانتینر (Container Breakout) دسترسی کامل به میزبان می‌دهد. برای جلوگیری از این ریسک باید در `Dockerfile` یک کاربر غیرریشه ایجاد کرده و با دستور `USER appuser` کانتینر را با حداقل دسترسی اجرا کرد.",
+    "reference_source": "docker_security_best_practices.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-05",
+    "query": "چگونه در داکر وضعیت سلامت کانتینر را با دستور HEALTHCHECK بررسی کنیم؟",
+    "language": "fa",
+    "domain": "docker",
+    "category": "standard",
+    "contexts": [
+      "The `HEALTHCHECK` instruction in a Dockerfile tells Docker how to test a container to check that it is still working, using parameters `--interval`, `--timeout`, `--start-period`, and `--retries` followed by `CMD curl -f http://localhost:8000/health || exit 1`."
+    ],
+    "ground_truth": "با استفاده از دستور `HEALTHCHECK` در `Dockerfile` و تعیین پارامترهای `--interval`، `--timeout` و `--retries` به همراه یک دستور بررسی مانند `CMD curl -f http://localhost:8000/health || exit 1` می‌توان سلامت سرویس داخل کانتینر را به صورت دوره‌ای پایش کرد.",
+    "reference_source": "docker_healthchecks.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-06",
+    "query": "مقدار بهینه پارامتر shared_buffers و work_mem در تنظیمات حافظه PostgreSQL چقدر باید باشد؟",
+    "language": "fa",
+    "domain": "postgres",
+    "category": "flag_in_persian",
+    "contexts": [
+      "For dedicated PostgreSQL database servers, `shared_buffers` should typically be set to 25% to 40% of total system RAM. `work_mem` controls memory per sort/hash operation before spilling to disk and should be sized conservatively because a single complex query can allocate multiple `work_mem` buffers concurrently."
+    ],
+    "ground_truth": "در سرورهای اختصاصی PostgreSQL، مقدار `shared_buffers` معمولاً بین ۲۵٪ تا ۴۰٪ کل حافظه RAM سیستم تنظیم می‌شود و `work_mem` باید با احتیاط بر اساس تعداد اتصالات همزمان تنظیم گردد تا از سرریز حافظه در عملیات مرتب‌سازی و هش جلوگیری شود.",
+    "reference_source": "postgres_memory_configuration.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-07",
+    "query": "تفاوت سطوح مختلف پارامتر wal_level در PostgreSQL برای راه‌اندازی Streaming Replication چیست؟",
+    "language": "fa",
+    "domain": "postgres",
+    "category": "flag_in_persian",
+    "contexts": [
+      "`wal_level` determines how much information is written to the Write-Ahead Log: `minimal` logs only crash recovery data, `replica` logs enough data for WAL archiving and physical streaming replication, and `logical` adds information required for logical decoding and logical replication."
+    ],
+    "ground_truth": "پارامتر `wal_level` دارای سه سطح است: `minimal` فقط برای بازیابی پس از کرش، `replica` برای آرشیو WAL و Streaming Replication فیزیکی، و `logical` برای پشتیبانی از Logical Replication در سطح جداول استفاده می‌شود.",
+    "reference_source": "postgres_wal_and_replication.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-08",
+    "query": "چگونه قفل‌های بلاتکلیف و Deadlock را در دیتابیس PostgreSQL با استفاده از pg_locks شناسایی و رفع کنیم؟",
+    "language": "fa",
+    "domain": "postgres",
+    "category": "error_log",
+    "contexts": [
+      "To diagnose lock contention in PostgreSQL, join `pg_locks` with `pg_stat_activity` where `NOT granted` to identify blocking PIDs, inspect `wait_event_type = 'Lock'`, and terminate stuck blockers safely using `pg_cancel_backend(pid)` or `pg_terminate_backend(pid)`."
+    ],
+    "ground_truth": "برای تشخیص قفل‌ها در PostgreSQL، جدول `pg_locks` را با `pg_stat_activity` روی رکوردهایی که `granted = false` هستند جوین کنید تا پردازش مسدودکننده مشخص شود و در صورت لزوم با تابع `pg_cancel_backend(pid)` یا `pg_terminate_backend(pid)` آن را متوقف نمایید.",
+    "reference_source": "postgres_troubleshooting_locks.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-09",
+    "query": "فرآیند Autovacuum در PostgreSQL چگونه از پدیده Table Bloat و سرریز Transaction ID جلوگیری می‌کند؟",
+    "language": "fa",
+    "domain": "postgres",
+    "category": "standard",
+    "contexts": [
+      "PostgreSQL's MVCC architecture leaves dead tuples after UPDATE and DELETE operations. The autovacuum daemon reclaims storage occupied by dead tuples to prevent table bloat, updates visibility maps and planner statistics, and freezes old transaction IDs (XID) to prevent transaction ID wraparound."
+    ],
+    "ground_truth": "در معماری MVCC پستگرس، عملیات `UPDATE` و `DELETE` رکوردهای مرده (Dead Tuples) ایجاد می‌کنند. سرویس `Autovacuum` فضای اشغال‌شده توسط این رکوردها را برای استفاده مجدد آزاد کرده، آمار بهینه‌ساز را به‌روز می‌کند و با فریز کردن شناسه‌های تراکنش قدیمی از رخداد Transaction ID Wraparound جلوگیری می‌نماید.",
+    "reference_source": "postgres_vacuuming_and_bloat.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-10",
+    "query": "نحوه محدود کردن مصرف RAM و CPU پردازش‌ها با استفاده از cgroups در کرنل لینوکس چگونه است؟",
+    "language": "fa",
+    "domain": "linux",
+    "category": "flag_in_persian",
+    "contexts": [
+      "Linux Control Groups (cgroups v2) enforce resource limits via a unified hierarchy under `/sys/fs/cgroup`. Memory is capped using `memory.max` (triggering the OOM killer if exceeded) and `memory.high` (throttling), while CPU bandwidth is constrained via `cpu.max` (`$MAX $PERIOD`)."
+    ],
+    "ground_truth": "در لینوکس با استفاده از `cgroups v2` در مسیر `/sys/fs/cgroup` می‌توان سقف مصرف حافظه را در فایل `memory.max` و سهمیه پردازنده را در فایل `cpu.max` تنظیم کرد تا هیچ کانتینر یا پردازشی منابع کل سرور را اشغال نکند.",
+    "reference_source": "linux_cgroups_resource_management.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-11",
+    "query": "چگونه خطای dial unix /var/run/docker.sock: connect: permission denied را در لینوکس برطرف کنیم؟",
+    "language": "fa",
+    "domain": "linux",
+    "category": "error_log",
+    "contexts": [
+      "The error `dial unix /var/run/docker.sock: connect: permission denied` occurs when a non-root Linux user attempts to communicate with the Docker daemon socket without belonging to the `docker` Unix group. Fix by running `sudo usermod -aG docker $USER` and re-initializing the group session with `newgrp docker`."
+    ],
+    "ground_truth": "این خطا زمانی رخ می‌دهد که کاربر فعلی عضو گروه `docker` در لینوکس نباشد. برای رفع آن دستور `sudo usermod -aG docker $USER` را اجرا کرده و سپس با دستور `newgrp docker` یا خروج و ورود مجدد، دسترسی گروه را فعال کنید.",
+    "reference_source": "linux-postinstall.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-12",
+    "query": "چگونه یک سرویس کانتینری را در لینوکس با systemd مدیریت کنیم تا پس از کرش به صورت خودکار ری‌استارت شود؟",
+    "language": "fa",
+    "domain": "linux",
+    "category": "standard",
+    "contexts": [
+      "To manage containers reliably under systemd, create a unit file in `/etc/systemd/system/` specifying `After=docker.service`, `Requires=docker.service`, `Restart=always`, and `RestartSec=5s`, then enable it with `systemctl daemon-reload && systemctl enable --now <service>`."
+    ],
+    "ground_truth": "با ایجاد یک فایل Unit در مسیر `/etc/systemd/system/` و قرار دادن تنظیمات `Requires=docker.service`، `Restart=always` و `RestartSec=5s` و سپس اجرای `systemctl daemon-reload`، سرویس در صورت توقف یا کرش به صورت خودکار بازیابی می‌شود.",
+    "reference_source": "linux_systemd_container_services.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-fa-13",
+    "query": "مشکل ارور ۵۰۲ در سرویس وب کانتینری",
+    "language": "fa",
+    "domain": "docker",
+    "category": "ambiguous",
+    "contexts": [
+      "When an Nginx reverse proxy container returns HTTP 502 Bad Gateway, verify that both Nginx and the backend service share a user-defined Docker bridge network and that the backend listens on `0.0.0.0` rather than `localhost`."
+    ],
+    "ground_truth": "خطای ۵۰۲ در سرویس وب کانتینری معمولاً به دلیل عدم دسترسی Nginx Reverse Proxy به کانتینر upstream رخ می‌دهد؛ باید اطمینان حاصل شود که هر دو سرویس در یک شبکه داکر قرار دارند و سرویس بک‌اند روی آدرس `0.0.0.0` گوش می‌دهد.",
+    "reference_source": "nginx_reverse_proxy_docker.md",
+    "expected_status": "ambiguous"
+  },
+  {
+    "id": "eval-fa-14",
+    "query": "قیمت روز سهام شرکت اپل و پیش‌بینی سود سه‌ماهه آینده آن در بورس نیویورک چقدر است؟",
+    "language": "fa",
+    "domain": "out_of_domain",
+    "category": "out_of_domain",
+    "contexts": [
+      "No relevant technical documentation found in Docker, PostgreSQL, or Linux knowledge base."
+    ],
+    "ground_truth": "پاسخ این سوال در مستندات بارگذاری‌شده موجود نیست. سیستم تنها بر مبنای مستندات فنی رسمی پاسخ می‌دهد و از حدس‌زدن خودداری می‌کند.",
+    "reference_source": "none",
+    "expected_status": "incorrect"
+  },
+  {
+    "id": "eval-fa-15",
+    "query": "طرز تهیه قورمه‌سبزی مجلسی برای شش نفر به همراه زمان پخت چقدر است؟",
+    "language": "fa",
+    "domain": "out_of_domain",
+    "category": "out_of_domain",
+    "contexts": [
+      "No relevant technical documentation found in Docker, PostgreSQL, or Linux knowledge base."
+    ],
+    "ground_truth": "پاسخ این سوال در مستندات بارگذاری‌شده موجود نیست. سیستم تنها بر مبنای مستندات فنی رسمی پاسخ می‌دهد و از حدس‌زدن خودداری می‌کند.",
+    "reference_source": "none",
+    "expected_status": "incorrect"
+  },
+  {
+    "id": "eval-en-01",
+    "query": "What is the difference between a user-defined Docker bridge network and the default bridge network regarding DNS resolution?",
+    "language": "en",
+    "domain": "docker",
+    "category": "standard",
+    "contexts": [
+      "Containers connected to a user-defined bridge network automatically resolve each other's container names and aliases to IP addresses via Docker's embedded DNS server (`127.0.0.11`), whereas containers on the default `bridge` network can only communicate by IP address unless legacy `--link` flags are used."
+    ],
+    "ground_truth": "User-defined bridge networks provide automatic embedded DNS resolution by container name or service alias, while the default `bridge` network does not resolve container names automatically and only allows raw IP communication.",
+    "reference_source": "docker_networking_bridge.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-02",
+    "query": "Why are named Docker volumes preferred over host bind mounts for production database containers?",
+    "language": "en",
+    "domain": "docker",
+    "category": "standard",
+    "contexts": [
+      "Named Docker volumes are completely managed by Docker under `/var/lib/docker/volumes/`, decoupled from the host's directory structure, support volume drivers for remote storage or encryption, and avoid host UID/GID permission mismatches common with bind mounts."
+    ],
+    "ground_truth": "Named volumes are managed directly by Docker, isolate data from host filesystem paths, prevent host permission/SELinux conflicts, and offer superior I/O performance and backup portability for production databases.",
+    "reference_source": "docker_storage_volumes.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-03",
+    "query": "How do you build and push a multi-architecture Docker image for both linux/amd64 and linux/arm64 using Buildx?",
+    "language": "en",
+    "domain": "docker",
+    "category": "standard",
+    "contexts": [
+      "Use `docker buildx create --use` to initialize a `docker-container` builder instance with QEMU emulation, then run `docker buildx build --platform linux/amd64,linux/arm64 -t org/app:latest --push .` to compile and publish a multi-arch manifest list."
+    ],
+    "ground_truth": "Create and bootstrap a Buildx builder (`docker buildx create --use`) and execute `docker buildx build --platform linux/amd64,linux/arm64 -t <image>:<tag> --push .` to generate and push a multi-architecture manifest.",
+    "reference_source": "docker_multi_arch_buildx.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-04",
+    "query": "How do I troubleshoot 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?' on Linux?",
+    "language": "en",
+    "domain": "docker",
+    "category": "error_log",
+    "contexts": [
+      "When receiving `Cannot connect to the Docker daemon at unix:///var/run/docker.sock`, check the daemon service state with `sudo systemctl status docker` and inspect startup failures via `sudo journalctl -u docker.service --no-pager -n 50` (such as invalid `/etc/docker/daemon.json` syntax or storage driver errors)."
+    ],
+    "ground_truth": "Verify whether `docker.service` is active using `sudo systemctl status docker`, start it via `sudo systemctl start docker`, and inspect `journalctl -u docker.service` for configuration errors in `/etc/docker/daemon.json`.",
+    "reference_source": "docker_troubleshooting_daemon.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-05",
+    "query": "How do Docker Compose profiles work to conditionally start debugging or monitoring services?",
+    "language": "en",
+    "domain": "docker",
+    "category": "standard",
+    "contexts": [
+      "Assigning `profiles: [\"debug\", \"monitoring\"]` to a service in `compose.yaml` prevents it from starting during a normal `docker compose up`. It is only started when explicitly enabled via `docker compose --profile debug up` or the `COMPOSE_PROFILES` environment variable."
+    ],
+    "ground_truth": "Services assigned a `profiles` attribute in `compose.yaml` are skipped by default during `docker compose up` and only launch when the matching profile is activated with `--profile <name>` or `COMPOSE_PROFILES`.",
+    "reference_source": "docker_compose_profiles.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-06",
+    "query": "Why should PgBouncer transaction pooling be used when PostgreSQL max_connections is reached under high concurrency?",
+    "language": "en",
+    "domain": "postgres",
+    "category": "standard",
+    "contexts": [
+      "Each native PostgreSQL connection spawns a separate OS backend process (~5-10 MB RAM), leading to context-switching and memory exhaustion at high `max_connections`. PgBouncer in `pool_mode = transaction` multiplexes thousands of client connections over a small pool of active server connections, assigning a backend connection only for the duration of a single transaction."
+    ],
+    "ground_truth": "PostgreSQL uses a process-per-connection model that consumes significant memory and CPU under high `max_connections`. PgBouncer in `transaction` pooling mode reuses a small number of backend Postgres processes across thousands of short-lived application transactions.",
+    "reference_source": "postgres_connection_pooling.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-07",
+    "query": "When should you choose Range Partitioning versus Hash Partitioning for large tables in PostgreSQL?",
+    "language": "en",
+    "domain": "postgres",
+    "category": "standard",
+    "contexts": [
+      "Use `PARTITION BY RANGE` for time-series or sequential data (such as `created_at` timestamps) to enable partition pruning on date-range queries and fast retention drops (`DROP TABLE`). Use `PARTITION BY HASH` when data lacks a natural range key and you need uniform distribution across partitions to balance I/O."
+    ],
+    "ground_truth": "Choose Range Partitioning for chronological or sequential columns to benefit from date-range partition pruning and instant retention cleanup, and choose Hash Partitioning when distributing high-cardinality keys evenly across shards without natural ordering.",
+    "reference_source": "postgres_partitioning_strategies.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-08",
+    "query": "How do you prevent long-running DDL migrations from causing a lock queue outage in PostgreSQL?",
+    "language": "en",
+    "domain": "postgres",
+    "category": "error_log",
+    "contexts": [
+      "An `ALTER TABLE` waiting for an `ACCESS EXCLUSIVE` lock blocks all subsequent reads and writes behind it in the lock queue. Always set a short `SET lock_timeout = '2s';` before running DDL statements and use `CREATE INDEX CONCURRENTLY` to avoid blocking concurrent DML operations."
+    ],
+    "ground_truth": "Set a strict `lock_timeout` (e.g., `SET lock_timeout = '2s';`) before executing `ALTER TABLE` so the migration aborts quickly if blocked rather than queuing all incoming queries, and use `CREATE INDEX CONCURRENTLY` for index creation.",
+    "reference_source": "postgres_troubleshooting_locks.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-09",
+    "query": "How do checkpoint_timeout and max_wal_size impact PostgreSQL write performance and crash recovery time?",
+    "language": "en",
+    "domain": "postgres",
+    "category": "standard",
+    "contexts": [
+      "Increasing `max_wal_size` and `checkpoint_timeout` reduces checkpoint frequency and full-page writes, smoothing out disk I/O spikes during heavy write workloads, at the trade-off of longer WAL replay times if crash recovery is required."
+    ],
+    "ground_truth": "Larger `max_wal_size` and `checkpoint_timeout` values spread dirty buffer flushes over longer intervals and reduce I/O spikes, but increase the volume of WAL segments that must be replayed after an unexpected crash.",
+    "reference_source": "postgres_wal_and_replication.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-10",
+    "query": "How does the Linux kernel OOM killer interact with cgroups v2 memory.max and memory.oom.group settings?",
+    "language": "en",
+    "domain": "linux",
+    "category": "standard",
+    "contexts": [
+      "When a cgroup's memory usage exceeds `memory.max` and reclaim fails, the Linux kernel invokes the OOM killer scoped to that cgroup. If `memory.oom.group` is set to `1`, the kernel terminates all processes in the cgroup together as an atomic unit to prevent partial corrupted service states."
+    ],
+    "ground_truth": "Exceeding `memory.max` triggers a cgroup-scoped OOM killer; enabling `memory.oom.group = 1` ensures all processes within the cgroup are terminated atomically rather than leaving the container in a partially killed state.",
+    "reference_source": "linux_cgroups_resource_management.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-11",
+    "query": "Which systemd unit directives harden a Linux container service against privilege escalation and filesystem tampering?",
+    "language": "en",
+    "domain": "linux",
+    "category": "standard",
+    "contexts": [
+      "Key systemd sandboxing directives include `NoNewPrivileges=yes` (blocking setuid privilege escalation), `ProtectSystem=strict` (mounting the OS filesystem read-only), `ProtectHome=yes`, and `PrivateTmp=yes`."
+    ],
+    "ground_truth": "Use `NoNewPrivileges=yes` to block privilege escalation via setuid binaries, `ProtectSystem=strict` to mount system directories read-only, `ProtectHome=yes`, and `PrivateTmp=yes` for isolated temporary files.",
+    "reference_source": "linux_systemd_container_services.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-12",
+    "query": "What is the security advantage of running Docker in Rootless Mode on Linux compared to standard rootful Docker?",
+    "language": "en",
+    "domain": "linux",
+    "category": "standard",
+    "contexts": [
+      "Rootless mode executes the Docker daemon and containers inside a user namespace as an unprivileged user without root privileges, mitigating potential container-engine vulnerabilities and host root privilege escalation."
+    ],
+    "ground_truth": "Rootless Docker runs both the daemon and containers inside an unprivileged user namespace, ensuring that even if the daemon or runtime is compromised, attackers cannot gain root privileges on the Linux host.",
+    "reference_source": "linux-postinstall.md",
+    "expected_status": "correct"
+  },
+  {
+    "id": "eval-en-13",
+    "query": "database queries got very slow after millions of row updates",
+    "language": "en",
+    "domain": "postgres",
+    "category": "ambiguous",
+    "contexts": [
+      "Frequent UPDATE and DELETE operations in PostgreSQL generate dead tuples due to MVCC. If autovacuum cannot keep pace, table and index bloat degrade sequential and index scan latency, requiring `VACUUM (VERBOSE, ANALYZE)` and tuning `autovacuum_vacuum_scale_factor`."
+    ],
+    "ground_truth": "Degraded query performance after heavy updates in PostgreSQL is typically caused by MVCC dead-tuple accumulation (table/index bloat) and stale planner statistics; run `VACUUM ANALYZE` and tune `autovacuum_vacuum_scale_factor`.",
+    "reference_source": "postgres_vacuuming_and_bloat.md",
+    "expected_status": "ambiguous"
+  },
+  {
+    "id": "eval-en-14",
+    "query": "What is the current stock price of NVIDIA and its Q4 revenue forecast?",
+    "language": "en",
+    "domain": "out_of_domain",
+    "category": "out_of_domain",
+    "contexts": [
+      "No relevant technical documentation found in Docker, PostgreSQL, or Linux knowledge base."
+    ],
+    "ground_truth": "The answer to this question is not available in the loaded documentation. The system only answers based on official technical documentation and refrains from guessing.",
+    "reference_source": "none",
+    "expected_status": "incorrect"
+  },
+  {
+    "id": "eval-en-15",
+    "query": "Who won the FIFA World Cup in 2022 and what was the final penalty shootout score?",
+    "language": "en",
+    "domain": "out_of_domain",
+    "category": "out_of_domain",
+    "contexts": [
+      "No relevant technical documentation found in Docker, PostgreSQL, or Linux knowledge base."
+    ],
+    "ground_truth": "The answer to this question is not available in the loaded documentation. The system only answers based on official technical documentation and refrains from guessing.",
+    "reference_source": "none",
+    "expected_status": "incorrect"
+  }
+]

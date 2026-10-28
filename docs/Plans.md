@@ -360,7 +360,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 10: Ragas Metric Evaluation & CI/CD Quality Gates
 
-### [ ] Task 10.1: Golden Evaluation Dataset Builder
+### [x] Task 10.1: Golden Evaluation Dataset Builder
 - **Objective:** Assemble 30 curated bilingual technical query-context-ground_truth evaluation samples.
 - **Reference Docs:** `docs/TESTING.md` (Section 4: Ragas Gating Suite), `docs/PRD.md` (Section 5: Evaluation Criteria).
 - **Target Files:**

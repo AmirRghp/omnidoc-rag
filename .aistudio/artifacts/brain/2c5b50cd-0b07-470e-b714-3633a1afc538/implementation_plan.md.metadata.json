@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation Plan for Task 9.2: Interactive Chat Workflow, Step Collapsing & Citations Drawer in app.py and tests/unit/test_chainlit_helpers.py.",
-  "updatedAt":  "2026-10-28T13:29:05.922962388Z",
+  "summary":  "Implementation Plan for Task 10.1: Golden Evaluation Dataset Builder (evals/datasets/golden_bilingual_eval.json, evals/eval_runner.py, and tests/unit/test_golden_dataset.py).",
+  "updatedAt":  "2026-10-28T13:46:13.183257808Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
