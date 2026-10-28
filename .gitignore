@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment Variables & Secrets (RFC 6749 / Security Rules)
+.env
+.env.*
+!.env.example
+
+# Cache & Testing
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Processed & Temporary Data
+data/processed/*
+!data/processed/.gitkeep
+*.pkl
+*.parquet
+
+# IDEs & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

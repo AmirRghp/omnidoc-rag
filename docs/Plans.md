@@ -11,7 +11,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 1: Project Scaffolding, Configuration & Infrastructure
 
-### [ ] Task 1.1: Initialize Directory Structure & Tooling Config
+### [x] Task 1.1: Initialize Directory Structure & Tooling Config
 - **Objective:** Create the complete Clean Architecture folder tree and configure `pyproject.toml` for `ruff`, `mypy`, and `pytest`.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 6: Project Structure), `docs/CODE_STYLE.md` (Section 8: Tooling & Enforcement).
 - **Target Files:**
