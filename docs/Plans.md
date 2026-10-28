@@ -82,45 +82,44 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - `src/common/security.py`
   - `tests/unit/test_security.py`
 - **Implementation Details:**
-  - Normalize Arabic `ي` and `ك` to standard Persian `ی` and `ک`.
-  - Strip directional override unicode characters (`U+202E`, `U+202B`, etc.).
-  - Enforce max query length of 1,000 characters; raise `InvalidInputSecurityError` if exceeded or empty.
+  - Unicode NFC normalization, Arabic to Persian character mapping (ي -> ی, ك -> ک), ZWNJ preservation.
+  - Directional override stripping (bidi attacks) and length validation (1 to 1000 characters).
 - **Verification:** `pytest tests/unit/test_security.py -v`
 
 ---
 
-## Phase 3: Document Acquisition, Parsing & Semantic Chunking
+## Phase 3: Data Ingestion & Technical Markdown Chunker
 
-### [x] Task 3.1: Technical Documentation Fetcher Script
-- **Objective:** Create an automated script to fetch official technical Markdown files (e.g., Docker Engine manuals) and add sample Persian technical guides.
-- **Reference Docs:** `docs/PRD.md` (Section 2 & 10), `docs/UX_FLOWS.md` (Flow 4).
+### [x] Task 3.1: Offline & Live Documentation Seed Pipeline
+- **Objective:** Download official documentation subsets (Docker, PostgreSQL, Linux) and create offline fixture docs.
+- **Reference Docs:** `docs/PRD.md` (Section 3: Target Technical Domains), `docs/ARCHITECTURE.md` (Section 4.1).
 - **Target Files:**
   - `scripts/fetch_docs.py`
-  - `data/raw/sample_persian_docker_guide.md`
+  - `data/raw/` (seed directory containing Docker, Postgres, Linux documentation)
 - **Implementation Details:**
-  - Download 25–30 Markdown files from GitHub API into `data/raw/`.
-  - Create a rich bilingual Persian/English Markdown troubleshooting guide (`sample_persian_docker_guide.md`) containing common Docker/PostgreSQL error codes (`ERR_DB_TIMEOUT`, `502 Bad Gateway`, `--ipc=host`, `permission denied`) to ensure bilingual test coverage.
-- **Verification:** `python scripts/fetch_docs.py` (verifies files exist in `data/raw/`).
+  - Fetch raw Markdown guides from GitHub repositories with offline fallback fixtures.
+  - Store files under `data/raw/docker/`, `data/raw/postgres/`, `data/raw/linux/`.
+- **Verification:** `pytest tests/unit/test_fetch_docs.py -v`
 
-### [x] Task 3.2: Header-Aware & Code-Safe Semantic Chunker
-- **Objective:** Implement a Markdown chunker that splits by headers while keeping code blocks and tables intact.
-- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.1), `docs/TESTING.md` (Section 3.2: Chunker Structural Integrity).
+### [x] Task 3.2: Markdown Semantic Chunker with Code Block & Table Integrity
+- **Objective:** Build a domain-specific Markdown chunker that preserves code blocks, tables, and hierarchy context.
+- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.1 & ADR-001), `docs/DATABASE.md` (Section 2: Chunking Strategy).
 - **Target Files:**
   - `src/ingestion/chunker.py`
   - `tests/unit/test_chunker.py`
 - **Implementation Details:**
-  - Implement `MarkdownSemanticChunker`:
-    - Parse Markdown headers (`#`, `##`, `###`) and attach the nearest heading to `section_heading` metadata.
-    - Never split inside triple-backtick code blocks (` ```...``` `) or Markdown tables.
-    - Detect primary chunk language (`"fa"` vs `"en"`) based on character script ratio.
-    - Calculate token count using `tiktoken`.
+  - Parse `#`, `##`, `###` headings and associate closest parent heading with every chunk.
+  - Guard fenced code blocks (```) and Markdown tables (|---|) from being split across chunk boundaries.
+  - Soft limit: 512 tokens (using `tiktoken` cl100k_base), 10% overlap (50 tokens) for long prose.
+  - Detect primary chunk language (`"fa"` vs `"en"`) based on character script ratio.
+  - Calculate token count using `tiktoken`.
 - **Verification:** `pytest tests/unit/test_chunker.py -v`
 
 ---
 
 ## Phase 4: Dual Indexing (BGE-M3 Dense + BM25 Sparse)
 
-### [ ] Task 4.1: Local BGE-M3 Embedding Wrapper
+### [x] Task 4.1: Local BGE-M3 Embedding Wrapper
 - **Objective:** Implement the local multilingual embedding generator using `BAAI/bge-m3`.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.1 & ADR-002), `docs/CODE_STYLE.md` (Section 4: Async Rules).
 - **Target Files:**
@@ -219,188 +218,182 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - `src/services/prompt_builder.py`
   - `tests/unit/test_prompt_builder.py`
 - **Implementation Details:**
-  - Format chunks inside `<retrieved_context><doc id="1" source="...">...</doc></retrieved_context>`.
-  - Enforce system instructions to ignore any imperative commands inside `<retrieved_context>` and answer in the user's query language (Persian or English) with inline `[Source: file#section]` citations.
+  - Enclose context with `<retrieved_context>` and strict instruction: "Answer only based on the context above. If not found, say you don't know."
+  - Enforce zero-hallucination refusal rules in bilingual prompts.
 - **Verification:** `pytest tests/unit/test_prompt_builder.py -v`
 
-### [ ] Task 6.2: Async vLLM Inference Client (Streaming & Structured)
-- **Objective:** Implement the OpenAI-compatible async client talking to local vLLM with exponential backoff and timeout handling.
-- **Reference Docs:** `docs/ARCHITECTURE.md` (ADR-001 & Section 9), `docs/PRD.md` (Feature 4).
+### [ ] Task 6.2: OpenAI-Compatible Local vLLM Client
+- **Objective:** Implement asynchronous client to communicate with local vLLM OpenAI-compatible endpoint.
+- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3 & ADR-003).
 - **Target Files:**
-  - `src/services/llm_service.py`
-  - `tests/unit/test_llm_service.py`
+  - `src/services/llm_client.py`
+  - `tests/unit/test_llm_client.py`
 - **Implementation Details:**
-  - Implement `LLMService` using `AsyncOpenAI(base_url=settings.LLM_BASE_URL, api_key=settings.LLM_API_KEY)`.
-  - Keep system prompt prefix identical across calls to maximize vLLM Prefix Caching hits.
-  - Raise `InferenceEngineUnavailableError` if vLLM connection fails after retries.
-- **Verification:** `pytest tests/unit/test_llm_service.py -v`
+  - Use `httpx.AsyncClient` targeting `LLM_BASE_URL`.
+  - Support streaming responses (`yield token`) and complete text generation.
+  - Handle retry logic (up to 3 retries with exponential backoff) and timeout handling.
+- **Verification:** `pytest tests/unit/test_llm_client.py -v`
 
-### [ ] Task 6.3: Redis Semantic Cache & Rate Limiter Service
-- **Objective:** Implement Redis query response caching (24h TTL) and sliding-window IP rate limiting (30 req/min).
-- **Reference Docs:** `docs/DATABASE.md` (Section 3.2: Redis Key Schema), `docs/SECURITY.md` (Section 5).
+### [ ] Task 6.3: Redis Exact & Semantic Query Cache
+- **Objective:** Implement 2-layer Redis caching (SHA-256 exact match + normalized query key).
+- **Reference Docs:** `docs/DATABASE.md` (Section 2.1: Key Formats & Section 2.2: Semantic Cache), `docs/ARCHITECTURE.md` (Section 4.4).
 - **Target Files:**
-  - `src/services/cache_service.py`
-  - `tests/unit/test_cache_service.py`
+  - `src/services/cache.py`
+  - `tests/unit/test_cache.py`
 - **Implementation Details:**
-  - Compute SHA-256 of normalized query for key `cache:query:<sha256_hash>`.
-  - Implement `check_rate_limit(client_ip)` using `ratelimit:ip:<client_ip>`.
-  - Fail open (log warning and continue) if Redis container is temporarily unreachable.
-- **Verification:** `pytest tests/unit/test_cache_service.py -v`
+  - Key format: `cache:response:{sha256(normalized_query)}`.
+  - Default TTL: 86400 seconds (24 hours).
+  - Implement `get(query)` and `set(query, response, citations)` methods.
+- **Verification:** `pytest tests/unit/test_cache.py -v`
 
 ---
 
-## Phase 7: LangGraph Corrective RAG (CRAG) Workflow
+## Phase 7: LangGraph Corrective RAG (CRAG) Control Plane
 
-### [ ] Task 7.1: LangGraph State Definition & CRAG Grader Node
-- **Objective:** Define the typed state dictionary and the Corrective RAG evaluator logic.
-- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3: LangGraph Corrective Control Plane), `docs/PRD.md` (Feature 3).
+### [ ] Task 7.1: LangGraph CRAG State Definition & Typed Contracts
+- **Objective:** Define the complete typed dictionary state for the LangGraph workflow.
+- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3: CRAG Loop & Section 7: LangGraph State Definition).
 - **Target Files:**
   - `src/graph/state.py`
-  - `src/graph/grader.py`
-  - `tests/unit/test_crag_grader.py`
+  - `tests/unit/test_graph_state.py`
 - **Implementation Details:**
-  - Define `RAGGraphState(TypedDict)` tracking `original_query`, `active_query`, `retrieved_chunks`, `reflection_status` (`CORRECT`, `AMBIGUOUS`, `INCORRECT`), `rewrite_count`, `answer`, and `citations`.
-  - Evaluate top reranker score:
-    - $\ge 0.70 \rightarrow$ `CORRECT`
-    - $0.35 \le \text{score} < 0.70$ and `rewrite_count < 1` $\rightarrow$ `AMBIGUOUS`
-    - $< 0.35$ (or second attempt below threshold) $\rightarrow$ `INCORRECT`
-- **Verification:** `pytest tests/unit/test_crag_grader.py -v`
+  - Implement `RAGState(TypedDict)` tracking `query`, `trace_id`, `normalized_query`, `retrieved_chunks`, `reranked_chunks`, `relevance_status`, `crag_score`, `rewritten_query`, `transformation_count`, `generation`, `citations`, `refusal_reason`.
+- **Verification:** `pytest tests/unit/test_graph_state.py -v`
 
-### [ ] Task 7.2: Query Rewriter & Refusal Fallback Nodes
-- **Objective:** Implement the query rewriting node for ambiguous queries and the zero-hallucination refusal node for out-of-domain queries.
-- **Reference Docs:** `docs/UX_FLOWS.md` (Flow 2 & Flow 3), `docs/ARCHITECTURE.md` (Section 4.3).
+### [ ] Task 7.2: Control Plane Nodes Implementation
+- **Objective:** Implement each atomic graph node: `retrieve_node`, `grade_documents_node`, `rewrite_query_node`, `generate_node`, `refuse_node`.
+- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3), `docs/SECURITY.md` (Section 3.1).
 - **Target Files:**
   - `src/graph/nodes.py`
   - `tests/unit/test_graph_nodes.py`
 - **Implementation Details:**
-  - `rewrite_query_node`: Reformulates vague queries (e.g., "مشکل ارور ۵۰۲") into technical search keywords and increments `rewrite_count`.
-  - `refuse_node`: Returns the deterministic bilingual refusal message without calling LLM generation when context is `INCORRECT`.
+  - `grade_documents_node`: checks top rerank score against `crag_correct_threshold` (0.70) and `crag_ambiguous_threshold` (0.35).
+  - `rewrite_query_node`: increments `transformation_count` and calls LLM rewriter.
+  - `refuse_node`: sets standard polite bilingual refusal message without calling generator.
 - **Verification:** `pytest tests/unit/test_graph_nodes.py -v`
 
-### [ ] Task 7.3: Assemble & Compile LangGraph Workflow with Langfuse Tracing
-- **Objective:** Wire all nodes (`retrieve_and_rerank`, `grade_context`, `rewrite_query`, `generate`, `refuse`) into a compiled `StateGraph`.
-- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3, 4.4 & Section 5 Diagram).
+### [ ] Task 7.3: LangGraph Workflow Assembly & Routing Logic
+- **Objective:** Assemble `StateGraph`, define conditional edges, and compile the workflow.
+- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3), `docs/TESTING.md` (Section 3.2).
 - **Target Files:**
   - `src/graph/workflow.py`
   - `tests/unit/test_workflow.py`
 - **Implementation Details:**
-  - Add conditional edges from `grade_context` to `generate`, `rewrite_query`, or `refuse`.
-  - Add edge from `rewrite_query` back to `retrieve_and_rerank` (capped at 1 loop).
-  - Integrate Langfuse trace spans around node executions.
+  - Conditional edge from `grade_documents`:
+    - `CORRECT` -> `generate`
+    - `AMBIGUOUS` -> `rewrite_query` (if `transformation_count < 1`, else `refuse`)
+    - `INCORRECT` -> `refuse`
+  - Compile with checkpointer support.
 - **Verification:** `pytest tests/unit/test_workflow.py -v`
 
 ---
 
-## Phase 8: FastAPI Backend, SSE Streaming & Security Middleware
+## Phase 8: FastAPI REST API, SSE Streaming & Middleware
 
-### [ ] Task 8.1: API Request/Response Schemas & RFC 7807 Exception Handler
-- **Objective:** Implement Pydantic API models and RFC 7807 Problem Details error middleware.
-- **Reference Docs:** `docs/API.md` (Section 2 & Section 3: Error Handling Contract), `docs/SECURITY.md` (Section 2).
+### [ ] Task 8.1: API Schemas & RFC 7807 Exception Handlers
+- **Objective:** Create API request/response Pydantic models and global RFC 7807 error formatters.
+- **Reference Docs:** `docs/API.md` (Section 2: Endpoints & Section 3: RFC 7807), `docs/SECURITY.md` (Section 4.2).
 - **Target Files:**
   - `src/api/schemas.py`
-  - `src/api/dependencies.py`
+  - `src/api/errors.py`
   - `tests/unit/test_api_schemas.py`
 - **Implementation Details:**
-  - Create `QueryRequest`, `QueryResponse`, `IngestResponse`, `EvalRunRequest`, `EvalRunResponse`, and `ProblemDetail`.
-  - Implement Bearer API Key validation dependency and rate-limit check dependency.
+  - Schemas: `QueryRequest`, `QueryResponse`, `FeedbackRequest`, `IngestionResponse`.
+  - Custom exception handler mapping `BaseRAGException` subclasses to standard JSON `{ type, title, status, detail, instance, trace_id }`.
 - **Verification:** `pytest tests/unit/test_api_schemas.py -v`
 
-### [ ] Task 8.2: Synchronous & SSE Streaming Query Endpoints
-- **Objective:** Implement `POST /api/v1/query` and `POST /api/v1/query/stream` in FastAPI.
-- **Reference Docs:** `docs/API.md` (Section 2.1 & 2.2), `docs/UX_FLOWS.md` (Flow 1).
+### [ ] Task 8.2: Security Middleware & Dependency Injection
+- **Objective:** Build API Key authentication, trace ID context injection, and sliding-window rate limiter.
+- **Reference Docs:** `docs/SECURITY.md` (Section 4.1: API Key Auth, Section 4.3: Rate Limiting), `docs/API.md` (Section 1).
 - **Target Files:**
-  - `src/api/routes.py`
-  - `main.py`
-  - `tests/integration/test_api_routes.py`
+  - `src/api/middleware.py`
+  - `src/api/dependencies.py`
+  - `tests/unit/test_middleware.py`
 - **Implementation Details:**
-  - Emit structured SSE events in `/api/v1/query/stream`: `step_start`, `retrieval_complete`, `token`, and `done`.
-  - Wire application lifespan in `main.py` to initialize shared Qdrant, Redis, and vLLM clients once at startup.
-- **Verification:** `pytest tests/integration/test_api_routes.py -v`
+  - Middleware injecting `X-Trace-ID` into `contextvars`.
+  - `verify_api_key` dependency verifying `Authorization: Bearer <API_KEY>`.
+  - Redis-based sliding-window rate limiter (60 requests/minute per IP).
+- **Verification:** `pytest tests/unit/test_middleware.py -v`
 
-### [ ] Task 8.3: Ingestion & Background Job Status Endpoints
-- **Objective:** Implement `POST /api/v1/ingest` and `GET /api/v1/ingest/status/{job_id}` with file upload security validation.
-- **Reference Docs:** `docs/API.md` (Section 2.3 & 2.4), `docs/SECURITY.md` (Section 6: File Upload & Ingestion Security).
+### [ ] Task 8.3: SSE Streaming Endpoint (`/api/v1/query/stream`)
+- **Objective:** Implement real-time Server-Sent Events (SSE) streaming endpoint with LangGraph step updates.
+- **Reference Docs:** `docs/API.md` (Section 2.2: Streaming Contract), `docs/UX_FLOWS.md` (Flow 1).
 - **Target Files:**
   - `src/api/routes.py`
-  - `tests/integration/test_ingest_routes.py`
+  - `src/main.py`
+  - `tests/integration/test_api_streaming.py`
 - **Implementation Details:**
-  - Enforce allowed extensions (`.md`, `.markdown`, `.txt`), 25MB size cap, and strip path traversal sequences (`../`).
-  - Run indexing in FastAPI `BackgroundTasks` and store job status in Redis.
-- **Verification:** `pytest tests/integration/test_ingest_routes.py -v`
+  - Stream events: `step` (retrieval, rerank, evaluate), `token` (LLM answer stream), `citations` (final list), `done`.
+  - Validate SSE headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache`.
+- **Verification:** `pytest tests/integration/test_api_streaming.py -v`
 
 ---
 
-## Phase 9: Chainlit Bilingual UI & Step Visualization
+## Phase 9: Bilingual Chainlit Web UI & Bidirectional Layout
 
-### [ ] Task 9.1: Design System CSS & Bi-Directional (RTL/LTR) Styling
-- **Objective:** Configure Chainlit theme, Vazirmatn + JetBrains Mono fonts, and automatic RTL/LTR styling.
-- **Reference Docs:** `docs/DESIGN_SYSTEM.md` (Section 3, 4, 10, 13).
+### [ ] Task 9.1: Chainlit Application Setup & Persian/RTL Theming
+- **Objective:** Configure Chainlit with custom CSS supporting proper Persian right-to-left layout and bilingual fonts (Vazirmatn).
+- **Reference Docs:** `docs/DESIGN_SYSTEM.md` (Section 3: RTL Rules, Section 4: Typography), `docs/UX_FLOWS.md` (Flow 1 & 2).
 - **Target Files:**
+  - `chainlit.md`
   - `.chainlit/config.toml`
   - `public/custom.css`
-- **Implementation Details:**
-  - Configure dark/light palette (`#090D16` background, `#10B981` primary Emerald, `#131B2E` surface).
-  - Load `Vazirmatn` for Persian text (`dir="auto"`) and force `dir="ltr"` on `<pre><code>` blocks.
-- **Verification:** Verify `.chainlit/config.toml` syntax and `public/custom.css` presence.
-
-### [ ] Task 9.2: Interactive Chainlit Application (`app.py`)
-- **Objective:** Build the Chainlit chat interface with collapsible reasoning steps and interactive source citations.
-- **Reference Docs:** `docs/UX_FLOWS.md` (Flows 1, 2, 3), `docs/DESIGN_SYSTEM.md` (Section 10 & 11).
-- **Target Files:**
   - `app.py`
 - **Implementation Details:**
-  - Render starter prompts in Persian and English on empty state.
-  - Display collapsible `cl.Step` accordions for:
-    1. *Hybrid Retrieval (Qdrant + BM25)*
-    2. *Reciprocal Rank Fusion & Cross-Encoder Reranking (with score pills)*
-    3. *CRAG Reflection Gate (showing `CORRECT`, `AMBIGUOUS` rewrite badge, or `INCORRECT` refusal)*
-  - Stream tokens smoothly and attach expandable source snippet elements at completion.
-- **Verification:** `ruff check app.py && mypy app.py`
+  - Add Google Fonts / local font definition for `Vazirmatn`.
+  - Set `dir="auto"` on message containers and define bidirectional styling for mixed Persian/English code spans.
+- **Verification:** Manual UI inspection via `chainlit run app.py --headless`.
+
+### [ ] Task 9.2: Interactive Chat Workflow, Step Collapsing & Citations Drawer
+- **Objective:** Connect Chainlit frontend to LangGraph stream, displaying real-time reasoning steps, citations, and feedback buttons.
+- **Reference Docs:** `docs/UX_FLOWS.md` (Flow 1: Query Execution & Flow 3: Feedback), `docs/DESIGN_SYSTEM.md` (Section 5: Components).
+- **Target Files:**
+  - `app.py`
+  - `tests/unit/test_chainlit_helpers.py`
+- **Implementation Details:**
+  - Implement `@cl.on_message` streaming from FastAPI backend or internal graph runner.
+  - Render collapsible `cl.Step` elements: `🔍 Retrieval (Dense + Sparse)`, `⚖️ Fusion & Reranking`, `🎯 Quality Gate (CRAG)`.
+  - Render citation pills and clickable drawer sidebar with source file and chunk ID.
+- **Verification:** `pytest tests/unit/test_chainlit_helpers.py -v`
 
 ---
 
-## Phase 10: Quantitative Evaluation Pipeline (Ragas + DeepEval) & Documentation
+## Phase 10: Ragas Metric Evaluation & CI/CD Quality Gates
 
-### [ ] Task 10.1: Curated Bilingual Golden Evaluation Dataset
-- **Objective:** Create `data/golden_eval_dataset.json` with 50 bilingual technical QA pairs and reference contexts.
-- **Reference Docs:** `docs/TESTING.md` (Section 4.1: Evaluation Dataset), `docs/PRD.md` (Feature 5).
+### [ ] Task 10.1: Golden Evaluation Dataset Builder
+- **Objective:** Assemble 30 curated bilingual technical query-context-ground_truth evaluation samples.
+- **Reference Docs:** `docs/TESTING.md` (Section 4: Ragas Gating Suite), `docs/PRD.md` (Section 5: Evaluation Criteria).
 - **Target Files:**
-  - `data/golden_eval_dataset.json`
-  - `evals/generate_synthetic_data.py`
+  - `evals/datasets/golden_bilingual_eval.json`
+  - `evals/eval_runner.py`
 - **Implementation Details:**
-  - Include exact error code lookups, Docker/PostgreSQL flags, Persian troubleshooting questions, and out-of-domain refusal questions.
-- **Verification:** `python -c "import json; data = json.load(open('data/golden_eval_dataset.json')); assert len(data) >= 30"`
+  - 15 Persian queries, 15 English queries covering Docker, Postgres, Linux.
+  - Include tricky edge cases: English command flags in Persian queries, ambiguous error logs, out-of-domain refusal test cases.
+- **Verification:** Python script verifying JSON schema of evaluation records.
 
-### [ ] Task 10.2: Multi-Variant Benchmark Runner (`Naive` vs `Hybrid` vs `Hybrid+Rerank+CRAG`)
-- **Objective:** Implement the automated Ragas evaluation runner comparing all 3 pipeline variants using local vLLM.
-- **Reference Docs:** `docs/TESTING.md` (Section 4.2 & 4.3), `docs/PRD.md` (Section 9: Success Metrics).
+### [ ] Task 10.2: Ragas Automated Metric Evaluation Runner
+- **Objective:** Execute Ragas evaluation for Faithfulness, Answer Relevance, Context Precision, and Context Recall.
+- **Reference Docs:** `docs/TESTING.md` (Section 4.2: Target Thresholds).
 - **Target Files:**
-  - `evals/run_benchmark.py`
-  - `evals/evaluate_metrics.py`
-  - `tests/unit/test_eval_runner.py`
+  - `evals/eval_runner.py`
+  - `tests/integration/test_ragas_gating.py`
 - **Implementation Details:**
-  - Compute `context_recall`, `context_precision`, `faithfulness`, `answer_relevancy`, and `p95_latency_ms`.
-  - Export JSON and Markdown comparison tables to `evals/results/latest_benchmark.md`.
-  - Exit with status code `1` if `faithfulness < 0.85` or `context_recall < 0.80`.
-- **Verification:** `pytest tests/unit/test_eval_runner.py -v`
+  - Compute scores using local vLLM judge model (`Qwen/Qwen2.5-7B-Instruct`).
+  - Gating thresholds:
+    - Faithfulness: $\ge 0.85$
+    - Answer Relevance: $\ge 0.85$
+    - Context Precision: $\ge 0.80$
+    - Context Recall: $\ge 0.75$
+  - Return exit code 1 if any metric fails gating threshold.
+- **Verification:** `pytest tests/integration/test_ragas_gating.py -v -m eval`
 
-### [ ] Task 10.3: GitHub Actions CI & Regression Gate Workflows
-- **Objective:** Configure automated CI workflows for unit testing, linting, and evaluation gating.
-- **Reference Docs:** `docs/ARCHITECTURE.md` (Section 6), `docs/TESTING.md` (Section 4.3 & 5).
+### [ ] Task 10.3: GitHub Actions CI Pipeline Configuration
+- **Objective:** Configure complete automated GitHub Actions CI pipeline running lint, type checks, unit tests, and integration suites.
+- **Reference Docs:** `docs/TESTING.md` (Section 5: CI Pipeline), `docs/CODE_STYLE.md` (Section 8).
 - **Target Files:**
-  - `.github/workflows/test.yml`
-  - `.github/workflows/eval-benchmark.yml`
-  - `Dockerfile`
+  - `.github/workflows/ci.yml`
 - **Implementation Details:**
-  - Configure non-root user in `Dockerfile` per `docs/SECURITY.md`.
-  - Run `ruff`, `mypy`, and `pytest` on every push and PR in `test.yml`.
-- **Verification:** `pytest tests/unit -v && ruff check src tests evals`
-
-### [ ] Task 10.4: Portfolio-Grade `README.md` with Benchmarks & Failure Analysis
-- **Objective:** Write the final engineering `README.md` highlighting architecture, quantitative benchmark tables, and honest edge-case failure modes.
-- **Reference Docs:** `docs/PRD.md` (Section 12: DoD), `docs/ARCHITECTURE.md` (Section 5 & 8).
-- **Target Files:**
-  - `README.md`
-- **Implementation Details:**
-  - Include system architecture diagram, ADR summary (why vLLM over Ollama, why BGE-M3, why CRAG), quantitative Ragas comparison table (`Naive Dense` vs `Hybrid` vs `Hybrid + Reranker + CRAG`), one-command Docker setup instructions, and a dedicated **Limitations & Edge Cases** section.
-- **Verification:** Verify all links in `README.md` point to valid files in `docs/`.
+  - Job 1: `lint-and-typecheck` (`ruff check .`, `ruff format --check .`, `mypy src`).
+  - Job 2: `unit-tests` (`pytest tests/unit -v --cov=src`).
+  - Job 3: `integration-tests` (with Qdrant and Redis service containers).
+- **Verification:** Local validation via `make test` or `act`.
