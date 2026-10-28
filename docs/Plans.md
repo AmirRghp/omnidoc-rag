@@ -169,7 +169,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 5: Hybrid Retrieval, RRF Fusion & Cross-Encoder Reranking
 
-### [ ] Task 5.1: Dense & Sparse Retrievers with Degraded Fallback
+### [x] Task 5.1: Dense & Sparse Retrievers with Degraded Fallback
 - **Objective:** Implement async Dense (Qdrant) and Sparse (BM25) retrieval modules with fault tolerance.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.2 & Section 9: Failure Scenarios), `docs/PRD.md` (Feature 1).
 - **Target Files:**
