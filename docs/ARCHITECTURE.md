@@ -195,8 +195,8 @@ omnidoc-rag/
 ## 8. Key Technical Decisions (Architecture Decision Records)
 
 ### ADR-001: vLLM over Ollama
-- **Decision:** Use standalone vLLM server with PagedAttention and AWQ quantization instead of Ollama.
-- **Rationale:** Ollama serializes requests in a single-threaded FIFO queue. Evaluating 50 queries in Ragas requires hundreds of concurrent calls. vLLM continuous batching drops evaluation duration from 45 minutes to under 3 minutes.
+- **Decision:** Use standalone vLLM server with PagedAttention and AWQ quantization instead of Ollama for production evaluation and concurrent serving, while retaining standard OpenAI-compatible API compatibility for Ollama in local low-VRAM development.
+- **Rationale:** Ollama serializes requests in a single-threaded FIFO queue. Evaluating 50 queries in Ragas requires hundreds of concurrent calls. vLLM continuous batching drops evaluation duration from 45 minutes to under 3 minutes. For local development on laptops with <8GB VRAM, the OpenAI-compatible endpoint allows drop-in fallback to Ollama (`http://localhost:11434/v1`).
 
 ### ADR-002: BGE-M3 for Dual Dense and Sparse Representation
 - **Decision:** Adopt `BAAI/bge-m3` as the primary embedding model.

@@ -22,6 +22,11 @@ OmniDoc RAG utilizes a specialized multi-storage architecture:
 
 ### 3.1 Qdrant Vector Collection: `tech_docs_bilingual`
 
+#### Client Connection & SSL Defense:
+In local development, Qdrant runs unauthenticated over plain HTTP (`http://localhost:6333`).
+- **Defensive HTTP Fallback:** The application settings support `QDRANT_HTTPS`. When connecting to `localhost`, `127.0.0.1`, or `0.0.0.0`, the clients in `QdrantStoreManager` and `DenseRetriever` explicitly default to `https=False` unless `QDRANT_HTTPS=true` is set. This prevents accidental SSL handshake errors (`WRONG_VERSION_NUMBER`) when an arbitrary or dummy API key is configured.
+- **Empty Key Normalization:** Empty environment variables (`QDRANT_API_KEY=""`, `REDIS_PASSWORD=""`) are automatically converted to `None` by Pydantic before initializing the clients.
+
 #### Collection Configuration:
 ```json
 {

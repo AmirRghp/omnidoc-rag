@@ -214,10 +214,59 @@ pip install -r requirements.txt
 Index seed documentation (Docker, PostgreSQL, Linux):
 ```bash
 python scripts/fetch_docs.py
-python -m src.ingestion.indexer --data-dir data/raw
+
+# Ingest into Qdrant & BM25 (using CPU to keep GPU memory free for your LLM):
+CUDA_VISIBLE_DEVICES="" python -m src.ingestion.indexer --path data/raw
 ```
 
-### Step 5: Launch the Application
+### Step 5: Start Your Local LLM (Choose Ollama or vLLM)
+OmniDoc RAG uses an OpenAI-compatible interface, so you can connect either **Ollama** (easiest for laptops/low-VRAM) or **vLLM** (high-throughput batching for dedicated GPUs):
+
+<details open>
+<summary><b>Option A: Ollama (Recommended for laptops & GPUs with &lt;8GB VRAM)</b></summary>
+
+1. **Pull and start model with Ollama:**
+   ```bash
+   ollama run qwen2.5:3b
+   # Or for very light setups:
+   # ollama run qwen2.5:1.5b
+   ```
+2. **Configure `.env`:**
+   ```env
+   LLM_BASE_URL=http://localhost:11434/v1
+   LLM_API_KEY=ollama
+   LLM_MODEL=qwen2.5:3b
+   ```
+</details>
+
+<details>
+<summary><b>Option B: vLLM (Recommended for dedicated GPUs with PagedAttention batching)</b></summary>
+
+1. **Install vLLM:**
+   ```bash
+   pip install vllm
+   ```
+2. **Launch the vLLM server on port 8001** (avoids colliding with FastAPI on port 8000):
+   ```bash
+   # For 4GB-8GB GPUs (AWQ quantized):
+   python -m vllm.entrypoints.openai.api_server \
+     --model Qwen/Qwen2.5-1.5B-Instruct-AWQ \
+     --port 8001 \
+     --gpu-memory-utilization 0.6 \
+     --max-model-len 2048
+
+   # For 12GB+ GPUs (Full 7B Instruct):
+   # python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-7B-Instruct --port 8001
+   ```
+3. **Configure `.env`:**
+   ```env
+   LLM_BASE_URL=http://localhost:8001/v1
+   LLM_API_KEY=dummy-local-key
+   LLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct-AWQ
+   ```
+</details>
+
+### Step 6: Launch the Application
 Run the FastAPI backend:
 ```bash
 uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
@@ -226,7 +275,7 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
 Run the Chainlit Web Interface:
 ```bash
-chainlit run app.py --port 8501
+chainlit run app.py -w --port 8501
 # UI available at: http://localhost:8501
 ```
 

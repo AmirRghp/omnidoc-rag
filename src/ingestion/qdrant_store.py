@@ -41,11 +41,17 @@ class QdrantStoreManager:
     def client(self) -> QdrantClient:
         """Get or create synchronous QdrantClient."""
         if self._client is None:
+            https = self.settings.qdrant_https
+            if https is None:
+                # If host is localhost/127.0.0.1, default to HTTP (no SSL) even if an API key is set
+                https = False if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"} else None
+
             self._client = QdrantClient(
                 host=self.settings.qdrant_host,
                 port=self.settings.qdrant_port,
                 grpc_port=self.settings.qdrant_grpc_port,
                 api_key=self.settings.qdrant_api_key,
+                https=https,
                 prefer_grpc=False,
             )
         return self._client
@@ -54,11 +60,16 @@ class QdrantStoreManager:
     def async_client(self) -> AsyncQdrantClient:
         """Get or create asynchronous AsyncQdrantClient."""
         if self._async_client is None:
+            https = self.settings.qdrant_https
+            if https is None:
+                https = False if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"} else None
+
             self._async_client = AsyncQdrantClient(
                 host=self.settings.qdrant_host,
                 port=self.settings.qdrant_port,
                 grpc_port=self.settings.qdrant_grpc_port,
                 api_key=self.settings.qdrant_api_key,
+                https=https,
                 prefer_grpc=False,
             )
         return self._async_client
