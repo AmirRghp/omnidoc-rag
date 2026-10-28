@@ -272,7 +272,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - `refuse_node`: sets standard polite bilingual refusal message without calling generator.
 - **Verification:** `pytest tests/unit/test_graph_nodes.py -v`
 
-### [ ] Task 7.3: LangGraph Workflow Assembly & Routing Logic
+### [x] Task 7.3: LangGraph Workflow Assembly & Routing Logic
 - **Objective:** Assemble `StateGraph`, define conditional edges, and compile the workflow.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3), `docs/TESTING.md` (Section 3.2).
 - **Target Files:**
