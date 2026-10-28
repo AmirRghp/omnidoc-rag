@@ -371,7 +371,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Include tricky edge cases: English command flags in Persian queries, ambiguous error logs, out-of-domain refusal test cases.
 - **Verification:** Python script verifying JSON schema of evaluation records.
 
-### [ ] Task 10.2: Ragas Automated Metric Evaluation Runner
+### [x] Task 10.2: Ragas Automated Metric Evaluation Runner
 - **Objective:** Execute Ragas evaluation for Faithfulness, Answer Relevance, Context Precision, and Context Recall.
 - **Reference Docs:** `docs/TESTING.md` (Section 4.2: Target Thresholds).
 - **Target Files:**

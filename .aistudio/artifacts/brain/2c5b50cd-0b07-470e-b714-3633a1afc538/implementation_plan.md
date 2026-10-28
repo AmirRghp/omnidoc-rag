@@ -1,78 +1,87 @@
-# Task 10.1: Golden Evaluation Dataset Builder
+# Task 10.2: Ragas Automated Metric Evaluation Runner
 
-Assemble the 30-sample curated bilingual (`fa` / `en`) technical evaluation dataset in `evals/datasets/golden_bilingual_eval.json` and implement the strict Pydantic V2 dataset loader and schema validator in `evals/eval_runner.py`, backed by unit tests in `tests/unit/test_golden_dataset.py`.
+Extend `evals/eval_runner.py` to execute quantitative Ragas evaluation (`Faithfulness`, `Answer Relevance`, `Context Precision`, and `Context Recall`) using the local vLLM judge model (`Qwen/Qwen2.5-7B-Instruct`), enforce CI quality gate thresholds, and add the `@pytest.mark.eval` integration suite in `tests/integration/test_ragas_gating.py`.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> Review the dataset structure and validation contract below before proceeding to implementation:
+> Review the evaluation runner architecture and gating thresholds below before proceeding to implementation:
 
-- **Strict Pydantic V2 Dataset Schema (`GoldenEvalSample`)**: Every record in `evals/datasets/golden_bilingual_eval.json` is validated with `ConfigDict(strict=True)` and includes `id`, `query`, `language` (`"fa" | "en"`), `domain` (`"docker" | "postgres" | "linux" | "out_of_domain"`), `category` (`"standard" | "flag_in_persian" | "error_log" | "ambiguous" | "out_of_domain"`), `contexts` (`list[str]`), `ground_truth` (`str`), `reference_source` (`str`), and `expected_status` (`"correct" | "ambiguous" | "incorrect"`).
-- **Balanced Bilingual & Edge-Case Distribution (30 Samples)**:
-  - **15 Persian (`fa`) + 15 English (`en`)** queries grounded in the existing `data/raw/*.md` corpus (`Docker`, `PostgreSQL`, `Linux`).
-  - Explicitly includes the required edge cases: English CLI flags embedded in Persian queries (e.g., `--ipc=host`, `network_mode`, `shared_buffers`), raw technical error logs (e.g., `502 Bad Gateway`, Docker daemon socket permission errors, PostgreSQL lock contention), ambiguous troubleshooting queries, and out-of-domain refusal queries.
-- **Forward Compatibility with Task 10.2**: `evals/eval_runner.py` exposes `load_golden_dataset()`, `validate_golden_dataset()`, and a `--validate-only` CLI mode so Task 10.2 can directly consume the validated `GoldenEvalSample` objects for Ragas metric computation without refactoring.
+- **Enforced Quality Gate Thresholds (`RagasGateThresholds`)**:
+  - `faithfulness` $\ge 0.85$
+  - `answer_relevancy` (`answer_relevance`) $\ge 0.85$
+  - `context_precision` $\ge 0.80$
+  - `context_recall` $\ge 0.75$
+  - Plus optional baseline regression guard (`docs/TESTING.md` §4.3): fails if `faithfulness` drops by $> 0.03$ ($3\%$) relative to an optional baseline score.
+- **Local vLLM Judge (`Qwen/Qwen2.5-7B-Instruct`) with Deterministic Fallback & Dependency Injection**:
+  - `RagasEvaluator` uses `VLLMClient` (`src/services/llm_client.py`) targeting `settings.llm_model` (`Qwen/Qwen2.5-7B-Instruct`) to score each sample's `(query, retrieved_contexts, generated_answer, ground_truth)` across the 4 Ragas metrics, and supports injecting a custom judge client or workflow for fast, deterministic testing in `tests/integration/test_ragas_gating.py`.
+- **Reusing Existing Domain Contracts**:
+  - Produces a validated `EvaluationRecord` from `src.common.schemas` alongside a detailed `RagasEvaluationReport` and exits with code `1` whenever any metric violates its threshold (or `0` when all gates pass).
+- **Pytest `--strict-markers` Registration**:
+  - Registers the `eval` marker in `pyproject.toml` under `[tool.pytest.ini_options]` so `pytest tests/integration/test_ragas_gating.py -v -m eval` runs cleanly under `--strict-markers`.
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Provides the canonical 30-sample bilingual ground-truth benchmark dataset and schema verification tooling for evaluating retrieval recall/precision, grounded generation faithfulness, and CRAG refusal accuracy.
-- **Target Audience / Persona**: AI/MLOps engineers and CI quality gates (`Task 10.2` & `Task 10.3`) running automated regression checks.
-- **Key Value**: Prevents silent retrieval or hallucination regressions across both Persian and English technical queries.
+- **What It Does**: Evaluates RAG pipeline outputs against the 30-sample bilingual Golden Dataset (`evals/datasets/golden_bilingual_eval.json`), aggregates `Faithfulness`, `Answer Relevance`, `Context Precision`, and `Context Recall`, and enforces non-negotiable CI gating floors.
+- **Target Audience / Persona**: MLOps engineers and automated CI pipelines (`Task 10.3`) verifying that prompt, chunking, or retrieval changes do not introduce hallucinations or retrieval regressions.
+- **Key Value**: Converts qualitative RAG quality into an automated, deterministic pass/fail gate with exit code `0` / `1`.
 
-## 2. Dataset Composition & Validation Flow
-
-- **Dataset Breakdown (`30` total samples)**:
-  - **Persian (`15` samples)**:
-    - Docker (`5` samples), PostgreSQL (`4` samples), Linux (`4` samples), Out-of-Domain Refusal (`2` samples).
-    - Includes mixed RTL/LTR queries with English flags (`--ipc=host`, `--network`, `max_connections`, `wal_level`, `cgroups`) and ambiguous error codes (`ارور ۵۰۲`).
-  - **English (`15` samples)**:
-    - Docker (`5` samples), PostgreSQL (`4` samples), Linux (`4` samples), Out-of-Domain Refusal (`2` samples).
-    - Includes exact daemon/socket error logs, multi-arch Buildx, PostgreSQL MVCC/vacuum bloat, systemd container units, and out-of-domain refusal cases.
-
-## 3. Technical Architecture & Data Strategy
+## 2. Evaluation & Gating Flow
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                 evals/datasets/golden_bilingual_eval.json                │
-│  30 Curated Samples (15 Persian 'fa' + 15 English 'en')                  │
-│  Domains: Docker, PostgreSQL, Linux, Out-of-Domain                       │
-│  Edge Cases: Flags in Persian, Error Logs, Ambiguous, Refusal            │
+│           Golden Dataset (evals/datasets/golden_bilingual_eval.json)     │
 └────────────────────────────────────┬─────────────────────────────────────┘
                                      │
                                      ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                           evals/eval_runner.py                           │
-├──────────────────────────────────────────────────────────────────────────┤
-│  ├── GoldenEvalSample(BaseModel, strict=True)                            │
-│  ├── GoldenDatasetSummary(BaseModel, strict=True)                        │
-│  ├── load_golden_dataset(path: Path) -> list[GoldenEvalSample]           │
-│  ├── validate_golden_dataset(samples) -> GoldenDatasetSummary            │
-│  └── main(argv) -> int  (CLI verification entrypoint)                    │
+│                 RagasEvaluator (evals/eval_runner.py)                    │
+│  ├── Judge Model: Local vLLM (Qwen/Qwen2.5-7B-Instruct via VLLMClient)   │
+│  ├── Per-Sample Scoring:                                                 │
+│  │     • faithfulness        ∈ [0.0, 1.0]                                │
+│  │     • answer_relevancy    ∈ [0.0, 1.0]                                │
+│  │     • context_precision   ∈ [0.0, 1.0]                                │
+│  │     • context_recall      ∈ [0.0, 1.0]                                │
+│  └── Aggregation -> EvaluationRecord (src.common.schemas)                │
 └────────────────────────────────────┬─────────────────────────────────────┘
                                      │
                                      ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     tests/unit/test_golden_dataset.py                    │
-│  Verifies schema validity, 15 fa / 15 en split, domain & edge-case       │
-│  coverage, unique IDs, and rejection of malformed records.               │
-└──────────────────────────────────────────────────────────────────────────┘
+│                       check_gating_thresholds(...)                       │
+│  • Faithfulness      >= 0.85   • Context Precision >= 0.80               │
+│  • Answer Relevance  >= 0.85   • Context Recall    >= 0.75               │
+│  • Faithfulness drop <= 0.03 vs baseline (if baseline provided)          │
+├────────────────────────────────────┬─────────────────────────────────────┤
+│  All Pass -> Exit Code 0           │  Any Fail -> Exit Code 1            │
+└────────────────────────────────────┴─────────────────────────────────────┘
 ```
 
-### Target Files
-- `evals/datasets/golden_bilingual_eval.json`
-- `evals/eval_runner.py`
-- `tests/unit/test_golden_dataset.py`
-- `docs/Plans.md` (mark Task 10.1 `[x]`)
+## 3. Target Files & Signatures
 
-### Acceptance Criteria & Verification
-1. **Golden Dataset (`evals/datasets/golden_bilingual_eval.json`)**:
-   - Contains exactly 30 curated samples: 15 Persian (`fa`) and 15 English (`en`).
-   - Covers `docker`, `postgres`, and `linux` technical documentation plus `out_of_domain` refusal cases.
-   - Includes English command flags in Persian queries, technical error logs, and ambiguous queries.
-2. **Dataset Validator & Runner (`evals/eval_runner.py`)**:
-   - Validates all records against `GoldenEvalSample` (`ConfigDict(strict=True)`) and verifies dataset invariants (30 samples, 15 `fa` / 15 `en`, all required domains and edge-case categories present).
-   - Executable via `.venv/bin/python -m evals.eval_runner` returning exit code `0`.
+- **`evals/eval_runner.py`**:
+  - `RagasGateThresholds(BaseModel)` — defaults: `faithfulness=0.85`, `answer_relevancy=0.85`, `context_precision=0.80`, `context_recall=0.75`, `max_faithfulness_regression=0.03`.
+  - `SampleMetricScores(BaseModel)` — per-sample scores (`sample_id`, `faithfulness`, `answer_relevancy`, `context_precision`, `context_recall`, `latency_ms`).
+  - `RagasEvaluationReport(BaseModel)` — wraps `record: EvaluationRecord`, `thresholds: RagasGateThresholds`, `passed: bool`, `failed_metrics: list[str]`, and `sample_scores: list[SampleMetricScores]`.
+  - `check_gating_thresholds(faithfulness, answer_relevancy, context_precision, context_recall, thresholds, baseline_faithfulness=None) -> tuple[bool, list[str]]`
+  - `RagasEvaluator` — async `aevaluate_sample(...)` and `aevaluate_dataset(...)` using `VLLMClient` (`Qwen/Qwen2.5-7B-Instruct`).
+  - `main(argv)` — supports `--validate-only`, `--samples`, `--output`, and `--baseline-faithfulness`, returning exit code `0` on pass and `1` on gating failure or error.
+- **`tests/integration/test_ragas_gating.py`**:
+  - `@pytest.mark.eval` tests covering:
+    1. Passing evaluation run above all 4 thresholds ($\rightarrow$ `passed=True`, exit code `0`).
+    2. Failing gating scenarios for each individual metric (`faithfulness < 0.85`, `answer_relevancy < 0.85`, `context_precision < 0.80`, `context_recall < 0.75`) and baseline regression $> 3\%$ ($\rightarrow$ `passed=False`, exit code `1`).
+    3. End-to-end `RagasEvaluator.aevaluate_dataset` with mocked local vLLM judge (`Qwen/Qwen2.5-7B-Instruct`) across bilingual samples and JSON report export.
+- **`pyproject.toml`**:
+  - Register `markers = ["eval: Quantitative Ragas evaluation and gating suite"]` under `[tool.pytest.ini_options]`.
+- **`docs/Plans.md`**:
+  - Mark Task 10.2 as completed (`[x]`).
+
+## 4. Acceptance Criteria & Verification
+
+1. **Gating Thresholds Enforced**:
+   - `Faithfulness >= 0.85`, `Answer Relevance >= 0.85`, `Context Precision >= 0.80`, `Context Recall >= 0.75`.
+   - CLI `main()` returns exit code `1` whenever any metric falls below its threshold and `0` when all thresholds are met.
+2. **Local vLLM Judge Integration**:
+   - Uses `Qwen/Qwen2.5-7B-Instruct` via `VLLMClient` to parse structured JSON metric judgments with strict $[0.0, 1.0]$ bounds clamping.
 3. **Verification Commands**:
-   - `.venv/bin/python -m evals.eval_runner` exits with `0` and prints the dataset validation summary.
-   - `.venv/bin/pytest tests/unit/test_golden_dataset.py -v` passes with 0 failures.
+   - `.venv/bin/pytest tests/integration/test_ragas_gating.py -v -m eval` passes with 0 failures.
    - `.venv/bin/ruff check .` and `.venv/bin/mypy --strict evals src app.py` pass with 0 errors.

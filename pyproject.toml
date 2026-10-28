@@ -94,3 +94,6 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
 addopts = "-v --strict-markers"
+markers = [
+    "eval: Quantitative Ragas evaluation and gating suite",
+]
