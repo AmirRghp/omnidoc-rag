@@ -54,9 +54,7 @@ class TestQdrantStoreManagerInitialization:
 class TestEnsureCollectionExists:
     """Test collection creation and payload indexing logic."""
 
-    def test_creates_collection_when_not_exists(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_creates_collection_when_not_exists(self, mock_settings: Settings) -> None:
         mock_client = MagicMock()
         mock_client.collection_exists.return_value = False
 
@@ -82,9 +80,7 @@ class TestEnsureCollectionExists:
         indexed_fields = [call.kwargs["field_name"] for call in calls]
         assert indexed_fields == ["doc_id", "source_file", "language"]
 
-    def test_skips_creation_when_already_exists(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_skips_creation_when_already_exists(self, mock_settings: Settings) -> None:
         mock_client = MagicMock()
         mock_client.collection_exists.return_value = True
 
@@ -96,9 +92,7 @@ class TestEnsureCollectionExists:
         mock_client.create_collection.assert_not_called()
         mock_client.create_payload_index.assert_not_called()
 
-    def test_timeout_raises_vector_store_timeout_error(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_timeout_raises_vector_store_timeout_error(self, mock_settings: Settings) -> None:
         mock_client = MagicMock()
         mock_client.collection_exists.side_effect = TimeoutError("Connection timed out")
 
@@ -110,9 +104,7 @@ class TestEnsureCollectionExists:
 class TestUpsertChunks:
     """Test idempotent chunk upsert and batching."""
 
-    def test_upsert_empty_list_returns_zero(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_upsert_empty_list_returns_zero(self, mock_settings: Settings) -> None:
         mock_client = MagicMock()
         manager = QdrantStoreManager(client=mock_client, settings=mock_settings)
         count = manager.upsert_chunks([], [])
@@ -189,9 +181,7 @@ class TestUpsertChunks:
             result = await manager.aupsert_chunks(
                 [sample_chunk_payload], [[0.1] * 1024], batch_size=32
             )
-            mock_sync.assert_called_once_with(
-                [sample_chunk_payload], [[0.1] * 1024], 32
-            )
+            mock_sync.assert_called_once_with([sample_chunk_payload], [[0.1] * 1024], 32)
             assert result == 1
 
 
@@ -222,9 +212,7 @@ class TestCollectionInfoAndDelete:
         _, kwargs = mock_client.delete.call_args
         assert kwargs["collection_name"] == "test_tech_docs"
 
-    def test_delete_by_empty_doc_id_raises_value_error(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_delete_by_empty_doc_id_raises_value_error(self, mock_settings: Settings) -> None:
         manager = QdrantStoreManager(settings=mock_settings)
         with pytest.raises(ValueError, match="cannot be empty"):
             manager.delete_by_doc_id("   ")

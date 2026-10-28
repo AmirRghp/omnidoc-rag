@@ -282,8 +282,7 @@ async def query_sync_endpoint(
 
     citations = final_state.get("citations", [])
     citation_items: list[CitationItem] = [
-        c if isinstance(c, CitationItem) else CitationItem.model_validate(c)
-        for c in citations
+        c if isinstance(c, CitationItem) else CitationItem.model_validate(c) for c in citations
     ]
 
     return QueryResponse(

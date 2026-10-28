@@ -387,7 +387,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Return exit code 1 if any metric fails gating threshold.
 - **Verification:** `pytest tests/integration/test_ragas_gating.py -v -m eval`
 
-### [ ] Task 10.3: GitHub Actions CI Pipeline Configuration
+### [x] Task 10.3: GitHub Actions CI Pipeline Configuration
 - **Objective:** Configure complete automated GitHub Actions CI pipeline running lint, type checks, unit tests, and integration suites.
 - **Reference Docs:** `docs/TESTING.md` (Section 5: CI Pipeline), `docs/CODE_STYLE.md` (Section 8).
 - **Target Files:**

@@ -152,4 +152,3 @@ class AuthenticationError(BaseRAGException):
             title="Authentication Failed",
             detail=detail,
         )
-

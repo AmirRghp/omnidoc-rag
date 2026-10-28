@@ -115,9 +115,7 @@ def validate_rag_state(state: Mapping[str, Any]) -> RAGState:
     if "crag_score" in state:
         score = state["crag_score"]
         if not isinstance(score, (int, float)) or not (0.0 <= score <= 1.0):
-            raise ValueError(
-                f"Field 'crag_score' must be a float between 0.0 and 1.0, got {score}"
-            )
+            raise ValueError(f"Field 'crag_score' must be a float between 0.0 and 1.0, got {score}")
 
     if "relevance_status" in state and state["relevance_status"] is not None:
         status = state["relevance_status"]

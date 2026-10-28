@@ -46,7 +46,6 @@ def test_custom_css_typography_and_rtl_rules() -> None:
     assert "#10B981" in content, "Emerald primary color (#10B981) must be defined"
 
 
-
 def test_chainlit_welcome_markdown() -> None:
     """Validate that chainlit.md contains bilingual introductory guidance."""
     md_path = Path("chainlit.md")

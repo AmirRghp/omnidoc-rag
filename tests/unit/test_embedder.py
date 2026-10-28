@@ -53,9 +53,7 @@ class TestBGEEmbedderInference:
     """Test embedding calculation with mocked SentenceTransformer."""
 
     @patch("src.ingestion.embedder.SentenceTransformer")
-    def test_lazy_loading(
-        self, mock_st_cls: MagicMock, mock_settings: Settings
-    ) -> None:
+    def test_lazy_loading(self, mock_st_cls: MagicMock, mock_settings: Settings) -> None:
         embedder = BGEEmbedder(device="cpu", settings=mock_settings)
         # Model not instantiated on __init__
         assert embedder._model is None
@@ -70,9 +68,7 @@ class TestBGEEmbedderInference:
         )
 
     @patch("src.ingestion.embedder.SentenceTransformer")
-    def test_embed_documents_batch(
-        self, mock_st_cls: MagicMock, mock_settings: Settings
-    ) -> None:
+    def test_embed_documents_batch(self, mock_st_cls: MagicMock, mock_settings: Settings) -> None:
         mock_instance = MagicMock()
         mock_st_cls.return_value = mock_instance
 
@@ -96,16 +92,12 @@ class TestBGEEmbedderInference:
         assert len(result[1]) == 1024
         assert isinstance(result[0][0], float)
 
-    def test_embed_documents_empty_returns_empty(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_embed_documents_empty_returns_empty(self, mock_settings: Settings) -> None:
         embedder = BGEEmbedder(settings=mock_settings)
         assert embedder.embed_documents([]) == []
 
     @patch("src.ingestion.embedder.SentenceTransformer")
-    def test_embed_query_success(
-        self, mock_st_cls: MagicMock, mock_settings: Settings
-    ) -> None:
+    def test_embed_query_success(self, mock_st_cls: MagicMock, mock_settings: Settings) -> None:
         mock_instance = MagicMock()
         mock_st_cls.return_value = mock_instance
 
@@ -119,24 +111,16 @@ class TestBGEEmbedderInference:
         assert vec[0] == pytest.approx(0.5)
 
     @pytest.mark.asyncio
-    async def test_aembed_query_async(
-        self, mock_settings: Settings
-    ) -> None:
-        with patch.object(
-            BGEEmbedder, "embed_query", return_value=[0.1] * 1024
-        ) as mock_sync:
+    async def test_aembed_query_async(self, mock_settings: Settings) -> None:
+        with patch.object(BGEEmbedder, "embed_query", return_value=[0.1] * 1024) as mock_sync:
             embedder = BGEEmbedder(device="cpu", settings=mock_settings)
             res = await embedder.aembed_query("async test query")
             mock_sync.assert_called_once_with("async test query")
             assert len(res) == 1024
 
     @pytest.mark.asyncio
-    async def test_aembed_documents_async(
-        self, mock_settings: Settings
-    ) -> None:
-        with patch.object(
-            BGEEmbedder, "embed_documents", return_value=[[0.2] * 1024]
-        ) as mock_sync:
+    async def test_aembed_documents_async(self, mock_settings: Settings) -> None:
+        with patch.object(BGEEmbedder, "embed_documents", return_value=[[0.2] * 1024]) as mock_sync:
             embedder = BGEEmbedder(device="cpu", settings=mock_settings)
             res = await embedder.aembed_documents(["async doc"])
             mock_sync.assert_called_once_with(["async doc"])
@@ -147,23 +131,17 @@ class TestBGEEmbedderInference:
 class TestBGEEmbedderValidation:
     """Test error handling and boundary conditions."""
 
-    def test_embed_query_empty_raises_value_error(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_embed_query_empty_raises_value_error(self, mock_settings: Settings) -> None:
         embedder = BGEEmbedder(settings=mock_settings)
         with pytest.raises(ValueError, match="cannot be empty"):
             embedder.embed_query("   ")
 
-    def test_embed_query_non_string_raises_type_error(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_embed_query_non_string_raises_type_error(self, mock_settings: Settings) -> None:
         embedder = BGEEmbedder(settings=mock_settings)
         with pytest.raises(TypeError, match="must be a string"):
             embedder.embed_query(123)  # type: ignore[arg-type]
 
-    def test_embed_documents_non_list_raises_type_error(
-        self, mock_settings: Settings
-    ) -> None:
+    def test_embed_documents_non_list_raises_type_error(self, mock_settings: Settings) -> None:
         embedder = BGEEmbedder(settings=mock_settings)
         with pytest.raises(TypeError, match="must be a list of string"):
             embedder.embed_documents("not a list")  # type: ignore[arg-type]

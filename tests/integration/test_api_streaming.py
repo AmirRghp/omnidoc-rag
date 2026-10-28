@@ -158,9 +158,7 @@ class TestAPIStreamingEndpoint:
             # Verify citations payload
             citations_event = next(e for e in events if e["event"] == "citations")
             assert len(citations_event["data"]["citations"]) == 1
-            assert (
-                citations_event["data"]["citations"][0]["source_file"] == "manuals/docker_run.md"
-            )
+            assert citations_event["data"]["citations"][0]["source_file"] == "manuals/docker_run.md"
 
             # Verify completion event
             done_event = next(e for e in events if e["event"] == "done")
@@ -285,13 +283,9 @@ class TestAPIStreamingEndpoint:
                 if e["event"] == "step" and e["data"].get("step") == "rewrite_query"
             ]
             assert len(rewrite_events) == 1
-            assert (
-                rewrite_events[0]["data"]["query"] == "Docker bridge network port mapping"
-            )
+            assert rewrite_events[0]["data"]["query"] == "Docker bridge network port mapping"
 
-    async def test_query_stream_validation_error_returns_rfc7807(
-        self, test_app: FastAPI
-    ) -> None:
+    async def test_query_stream_validation_error_returns_rfc7807(self, test_app: FastAPI) -> None:
         """Invalid empty query returns RFC 7807 problem details with 400 or 422 status."""
         transport = httpx.ASGITransport(app=test_app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:

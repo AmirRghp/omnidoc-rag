@@ -118,14 +118,10 @@ class QdrantStoreManager:
 
         except (ResponseHandlingException, TimeoutError) as exc:
             logger.error("qdrant_connection_timeout", error=str(exc))
-            raise VectorStoreTimeoutError(
-                f"Timed out communicating with Qdrant: {exc}"
-            ) from exc
+            raise VectorStoreTimeoutError(f"Timed out communicating with Qdrant: {exc}") from exc
         except UnexpectedResponse as exc:
             logger.error("qdrant_unexpected_response", error=str(exc))
-            raise VectorStoreTimeoutError(
-                f"Unexpected response from Qdrant: {exc}"
-            ) from exc
+            raise VectorStoreTimeoutError(f"Unexpected response from Qdrant: {exc}") from exc
 
     def upsert_chunks(
         self,
@@ -190,9 +186,7 @@ class QdrantStoreManager:
 
         except (ResponseHandlingException, TimeoutError) as exc:
             logger.error("qdrant_upsert_timeout", error=str(exc))
-            raise VectorStoreTimeoutError(
-                f"Timed out upserting points to Qdrant: {exc}"
-            ) from exc
+            raise VectorStoreTimeoutError(f"Timed out upserting points to Qdrant: {exc}") from exc
         except UnexpectedResponse as exc:
             logger.error("qdrant_upsert_unexpected_response", error=str(exc))
             raise VectorStoreTimeoutError(

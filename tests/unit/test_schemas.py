@@ -384,4 +384,3 @@ class TestIngestionSummary:
                 total_tokens=100,
                 duration_seconds=1.0,
             )
-

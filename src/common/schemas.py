@@ -141,4 +141,3 @@ class IngestionSummary(BaseModel):
     errors: list[str] = Field(
         default_factory=list, description="Error messages encountered, if any."
     )
-
