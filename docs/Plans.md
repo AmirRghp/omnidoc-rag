@@ -143,7 +143,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Implement batched upsert using deterministic UUIDv4 keys.
 - **Verification:** `pytest tests/unit/test_qdrant_store.py -v`
 
-### [ ] Task 4.3: Persistent BM25 Lexical Indexer
+### [x] Task 4.3: Persistent BM25 Lexical Indexer
 - **Objective:** Build and persist the bilingual BM25 inverted index with atomic file writes.
 - **Reference Docs:** `docs/DATABASE.md` (Section 1 & Section 5: BM25 Persistence), `docs/ARCHITECTURE.md` (Section 4.1).
 - **Target Files:**

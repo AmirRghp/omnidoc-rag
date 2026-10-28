@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for Task 4.3: Persistent BM25 Lexical Indexer (src/ingestion/bm25_store.py and tests/unit/test_bm25_store.py) with bilingual technical tokenization and atomic file persistence.",
+  "updatedAt":  "2026-10-28T09:39:58.515633136Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
