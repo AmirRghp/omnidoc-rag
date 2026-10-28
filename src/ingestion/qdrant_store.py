@@ -44,7 +44,11 @@ class QdrantStoreManager:
             https = self.settings.qdrant_https
             if https is None:
                 # If host is localhost/127.0.0.1, default to HTTP (no SSL) even if an API key is set
-                https = False if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"} else None
+                https = (
+                    False
+                    if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"}
+                    else None
+                )
 
             self._client = QdrantClient(
                 host=self.settings.qdrant_host,
@@ -62,7 +66,11 @@ class QdrantStoreManager:
         if self._async_client is None:
             https = self.settings.qdrant_https
             if https is None:
-                https = False if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"} else None
+                https = (
+                    False
+                    if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"}
+                    else None
+                )
 
             self._async_client = AsyncQdrantClient(
                 host=self.settings.qdrant_host,

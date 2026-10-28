@@ -72,7 +72,14 @@ class Settings(BaseSettings):
     crag_ambiguous_threshold: float = Field(default=0.35, alias="CRAG_AMBIGUOUS_THRESHOLD")
     max_query_transformations: int = Field(default=2, alias="MAX_QUERY_TRANSFORMATIONS")
 
-    @field_validator("qdrant_api_key", "redis_password", "langfuse_public_key", "langfuse_secret_key", "qdrant_https", mode="before")
+    @field_validator(
+        "qdrant_api_key",
+        "redis_password",
+        "langfuse_public_key",
+        "langfuse_secret_key",
+        "qdrant_https",
+        mode="before",
+    )
     @classmethod
     def empty_str_to_none(cls, value: Any) -> Any:
         """Convert empty strings to None."""

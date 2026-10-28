@@ -60,7 +60,11 @@ class DenseRetriever:
         if self._client is None:
             https = self.settings.qdrant_https
             if https is None:
-                https = False if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"} else None
+                https = (
+                    False
+                    if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"}
+                    else None
+                )
 
             self._client = AsyncQdrantClient(
                 host=self.settings.qdrant_host,
