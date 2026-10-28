@@ -250,7 +250,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 7: LangGraph Corrective RAG (CRAG) Control Plane
 
-### [ ] Task 7.1: LangGraph CRAG State Definition & Typed Contracts
+### [x] Task 7.1: LangGraph CRAG State Definition & Typed Contracts
 - **Objective:** Define the complete typed dictionary state for the LangGraph workflow.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3: CRAG Loop & Section 7: LangGraph State Definition).
 - **Target Files:**
