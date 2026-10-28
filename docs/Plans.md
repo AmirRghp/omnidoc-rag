@@ -222,7 +222,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Enforce zero-hallucination refusal rules in bilingual prompts.
 - **Verification:** `pytest tests/unit/test_prompt_builder.py -v`
 
-### [ ] Task 6.2: OpenAI-Compatible Local vLLM Client
+### [x] Task 6.2: OpenAI-Compatible Local vLLM Client
 - **Objective:** Implement asynchronous client to communicate with local vLLM OpenAI-compatible endpoint.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3 & ADR-003).
 - **Target Files:**
