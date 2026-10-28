@@ -154,7 +154,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Build `BM25Okapi` index over chunks and save atomically via temporary file + `os.replace` to `data/processed/bm25_index.pkl`.
 - **Verification:** `pytest tests/unit/test_bm25_store.py -v`
 
-### [ ] Task 4.4: Unified Ingestion Coordinator CLI & Service
+### [x] Task 4.4: Unified Ingestion Coordinator CLI & Service
 - **Objective:** Connect chunker, embedder, Qdrant, and BM25 into a single ingestion service.
 - **Reference Docs:** `docs/UX_FLOWS.md` (Flow 4), `docs/ARCHITECTURE.md` (Section 4.1).
 - **Target Files:**

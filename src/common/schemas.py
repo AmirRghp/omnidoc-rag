@@ -110,3 +110,23 @@ class EvaluationRecord(BaseModel):
         default_factory=lambda: datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         description="Evaluation timestamp in ISO 8601 UTC format.",
     )
+
+
+class IngestionSummary(BaseModel):
+    """Summary metrics and audit record of an ingestion execution run."""
+
+    model_config = ConfigDict(strict=True)
+
+    total_files: int = Field(..., ge=0, description="Total number of files processed.")
+    total_chunks: int = Field(..., ge=0, description="Total number of chunks produced and indexed.")
+    total_tokens: int = Field(..., ge=0, description="Total token volume across all chunks.")
+    duration_seconds: float = Field(
+        ..., ge=0.0, description="Elapsed indexing wall-clock time in seconds."
+    )
+    processed_files: list[str] = Field(
+        default_factory=list, description="Relative paths of processed files."
+    )
+    errors: list[str] = Field(
+        default_factory=list, description="Error messages encountered, if any."
+    )
+

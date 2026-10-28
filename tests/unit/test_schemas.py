@@ -9,6 +9,7 @@ from src.common.schemas import (
     CitationItem,
     DocumentChunkPayload,
     EvaluationRecord,
+    IngestionSummary,
     RetrievedChunk,
     generate_point_id,
 )
@@ -318,3 +319,69 @@ class TestEvaluationRecord:
                 p95_latency_ms=100,
                 total_samples=0,  # ge=1
             )
+
+
+class TestIngestionSummary:
+    """Tests for IngestionSummary schema validation."""
+
+    def test_valid_ingestion_summary(self) -> None:
+        """Valid ingestion summary attributes must pass validation."""
+        summary = IngestionSummary(
+            total_files=2,
+            total_chunks=15,
+            total_tokens=3450,
+            duration_seconds=1.234,
+            processed_files=["docs/guide.md", "docs/intro.md"],
+            errors=[],
+        )
+        assert summary.total_files == 2
+        assert summary.total_chunks == 15
+        assert summary.total_tokens == 3450
+        assert summary.duration_seconds == 1.234
+        assert len(summary.processed_files) == 2
+        assert summary.errors == []
+
+    def test_negative_values_rejected(self) -> None:
+        """Negative file, chunk, token, or duration values must be rejected."""
+        with pytest.raises(ValidationError):
+            IngestionSummary(
+                total_files=-1,
+                total_chunks=10,
+                total_tokens=100,
+                duration_seconds=1.0,
+            )
+
+        with pytest.raises(ValidationError):
+            IngestionSummary(
+                total_files=1,
+                total_chunks=-1,
+                total_tokens=100,
+                duration_seconds=1.0,
+            )
+
+        with pytest.raises(ValidationError):
+            IngestionSummary(
+                total_files=1,
+                total_chunks=10,
+                total_tokens=-1,
+                duration_seconds=1.0,
+            )
+
+        with pytest.raises(ValidationError):
+            IngestionSummary(
+                total_files=1,
+                total_chunks=10,
+                total_tokens=100,
+                duration_seconds=-0.5,
+            )
+
+    def test_strict_mode_rejects_coercion(self) -> None:
+        """String numbers in integer fields must be rejected in strict mode."""
+        with pytest.raises(ValidationError):
+            IngestionSummary(
+                total_files="1",  # type: ignore[arg-type]
+                total_chunks=10,
+                total_tokens=100,
+                duration_seconds=1.0,
+            )
+
