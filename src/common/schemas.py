@@ -66,6 +66,18 @@ class RetrievedChunk(BaseModel):
         description="Additional context such as RRF rank, original score, or headers.",
     )
 
+    def __getitem__(self, key: str) -> Any:
+        """Allow subscript access for compatibility with dictionary interfaces."""
+        if hasattr(self, key):
+            return getattr(self, key)
+        if key in self.metadata:
+            return self.metadata[key]
+        raise KeyError(key)
+
+    def __contains__(self, key: str) -> bool:
+        """Check presence of attribute or metadata key."""
+        return hasattr(self, key) or key in self.metadata
+
 
 class CitationItem(BaseModel):
     """Schema representing an individual grounded citation in API responses."""

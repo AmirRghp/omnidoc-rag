@@ -182,7 +182,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - If Qdrant times out, log a warning and allow the pipeline to proceed with BM25 results (degraded mode).
 - **Verification:** `pytest tests/unit/test_retrievers.py -v`
 
-### [ ] Task 5.2: Reciprocal Rank Fusion (RRF) Engine
+### [x] Task 5.2: Reciprocal Rank Fusion (RRF) Engine
 - **Objective:** Implement deterministic Reciprocal Rank Fusion to merge Dense and Sparse rankings.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.2: RRF formula), `docs/TESTING.md` (Section 3.1).
 - **Target Files:**
