@@ -48,7 +48,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Implement `Settings(BaseSettings)` in `src/common/config.py` loading environment variables (`LLM_BASE_URL`, `QDRANT_HOST`, `REDIS_HOST`, `API_KEY`, etc.) and retrieval hyperparameters (`top_k_dense=20`, `top_k_sparse=20`, `rrf_k=60`, `rerank_top_n=5`, `crag_correct_threshold=0.70`, `crag_ambiguous_threshold=0.35`).
 - **Verification:** `pytest tests/unit/test_config.py -v`
 
-### [ ] Task 1.4: Custom Exception Hierarchy & Structured Logger
+### [x] Task 1.4: Custom Exception Hierarchy & Structured Logger
 - **Objective:** Build the domain exception classes and JSON/context-aware logger.
 - **Reference Docs:** `docs/CODE_STYLE.md` (Section 6: Error Handling, Section 7: Logging), `docs/API.md` (Section 3: RFC 7807).
 - **Target Files:**
