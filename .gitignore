@@ -52,3 +52,6 @@ data/processed/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Chainlit Runtime Artifacts
+.files/

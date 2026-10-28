@@ -7,7 +7,7 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - qdrant_storage:/qdrant/storage:z
+      - qdrant_storage:/qdrant/storage
     environment:
       - QDRANT__SERVICE__ENABLE_STATIC_CONTENT=0
     healthcheck:
@@ -42,7 +42,7 @@ services:
     container_name: omnidoc-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-54321}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-omnidoc}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-omnidoc_password}

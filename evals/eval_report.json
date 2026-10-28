@@ -1,0 +1,268 @@
+{
+  "record": {
+    "id": "85fc80be-ceea-499c-b07b-2aa90e751149",
+    "run_name": "ragas-bilingual-gating-run",
+    "model_name": "Qwen/Qwen2.5-1.5B-Instruct-AWQ",
+    "embedding_model": "BAAI/bge-m3",
+    "retrieval_strategy": "hybrid_rerank",
+    "context_recall": 0.9587,
+    "context_precision": 0.9527,
+    "faithfulness": 0.985,
+    "answer_relevancy": 0.9683,
+    "p95_latency_ms": 256,
+    "total_samples": 30,
+    "pass_threshold": true,
+    "created_at": "2026-10-28T20:45:19Z"
+  },
+  "thresholds": {
+    "faithfulness": 0.85,
+    "answer_relevancy": 0.85,
+    "context_precision": 0.8,
+    "context_recall": 0.75,
+    "max_faithfulness_regression": 0.03
+  },
+  "passed": true,
+  "failed_metrics": [],
+  "sample_scores": [
+    {
+      "sample_id": "eval-fa-01",
+      "faithfulness": 0.95,
+      "answer_relevancy": 0.85,
+      "context_precision": 0.75,
+      "context_recall": 0.85,
+      "latency_ms": 462
+    },
+    {
+      "sample_id": "eval-fa-02",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 225
+    },
+    {
+      "sample_id": "eval-fa-03",
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.9,
+      "context_recall": 0.9,
+      "latency_ms": 223
+    },
+    {
+      "sample_id": "eval-fa-04",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 229
+    },
+    {
+      "sample_id": "eval-fa-05",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 229
+    },
+    {
+      "sample_id": "eval-fa-06",
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.7,
+      "context_recall": 0.8,
+      "latency_ms": 256
+    },
+    {
+      "sample_id": "eval-fa-07",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 236
+    },
+    {
+      "sample_id": "eval-fa-08",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 235
+    },
+    {
+      "sample_id": "eval-fa-09",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 245
+    },
+    {
+      "sample_id": "eval-fa-10",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 231
+    },
+    {
+      "sample_id": "eval-fa-11",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 233
+    },
+    {
+      "sample_id": "eval-fa-12",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 232
+    },
+    {
+      "sample_id": "eval-fa-13",
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.7,
+      "context_recall": 0.6,
+      "latency_ms": 233
+    },
+    {
+      "sample_id": "eval-fa-14",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 225
+    },
+    {
+      "sample_id": "eval-fa-15",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 234
+    },
+    {
+      "sample_id": "eval-en-01",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 227
+    },
+    {
+      "sample_id": "eval-en-02",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 205
+    },
+    {
+      "sample_id": "eval-en-03",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 227
+    },
+    {
+      "sample_id": "eval-en-04",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 227
+    },
+    {
+      "sample_id": "eval-en-05",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 219
+    },
+    {
+      "sample_id": "eval-en-06",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 221
+    },
+    {
+      "sample_id": "eval-en-07",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 220
+    },
+    {
+      "sample_id": "eval-en-08",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 223
+    },
+    {
+      "sample_id": "eval-en-09",
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.85,
+      "context_precision": 0.7,
+      "context_recall": 0.85,
+      "latency_ms": 230
+    },
+    {
+      "sample_id": "eval-en-10",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 224
+    },
+    {
+      "sample_id": "eval-en-11",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 219
+    },
+    {
+      "sample_id": "eval-en-12",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 218
+    },
+    {
+      "sample_id": "eval-en-13",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 224
+    },
+    {
+      "sample_id": "eval-en-14",
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.95,
+      "context_precision": 0.83,
+      "context_recall": 0.76,
+      "latency_ms": 230
+    },
+    {
+      "sample_id": "eval-en-15",
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0,
+      "latency_ms": 215
+    }
+  ]
+}

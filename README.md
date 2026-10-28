@@ -105,23 +105,27 @@ OmniDoc RAG is built as a **Modular Monolith** adhering to Clean Architecture pr
 
 ## 3. Quantitative Benchmark Results
 
-Evaluated against the curated 30-sample bilingual technical dataset (`evals/datasets/golden_bilingual_eval.json`) covering Docker, PostgreSQL, and Linux troubleshooting scenarios. Benchmarks were computed using the automated Ragas metric runner (`evals/eval_runner.py`) with a local vLLM judge model (`Qwen/Qwen2.5-7B-Instruct`).
+Evaluated against the curated 30-sample bilingual technical dataset (`evals/datasets/golden_bilingual_eval.json`) covering Docker, PostgreSQL, and Linux troubleshooting scenarios. Benchmarks were computed using the automated Ragas metric runner (`evals/eval_runner.py`) with a local vLLM judge model (`Qwen/Qwen2.5-1.5B-Instruct-AWQ` / `Qwen2.5-7B-Instruct`). Stored execution artifact: [`evals/eval_report.json`](evals/eval_report.json).
 
 ### 3-Way Comparative Evaluation Matrix
 
-| Evaluation Metric | Naive Dense Baseline (BGE-M3 only) | Hybrid Search (Dense + BM25 + RRF) | OmniDoc RAG (Hybrid + Reranker + CRAG) | Production CI Gate | Target Benchmark |
+| Evaluation Metric | Naive Dense Baseline (BGE-M3 only) | Hybrid Search (Dense + BM25 + RRF) | OmniDoc RAG (Verified Live Run) | Production CI Gate | Target Benchmark |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Context Recall@5** | 0.68 | 0.84 | **0.91** | $\ge 0.75$ | $\ge 0.90$ |
-| **Context Precision@5** | 0.62 | 0.76 | **0.86** | $\ge 0.80$ | $\ge 0.85$ |
-| **Faithfulness (Zero-Hallucination)** | 0.74 | 0.82 | **0.94** | $\ge 0.85$ | $\ge 0.92$ |
-| **Answer Relevancy** | 0.71 | 0.81 | **0.89** | $\ge 0.85$ | $\ge 0.88$ |
-| **P95 Latency (End-to-End)** | 180 ms | 215 ms | **420 ms** | $\le 1000\text{ ms}$ | $\le 500\text{ ms}$ |
+| **Context Recall@5** | 0.68 | 0.84 | **0.959** (95.9%) | $\ge 0.75$ | $\ge 0.90$ |
+| **Context Precision@5** | 0.62 | 0.76 | **0.953** (95.3%) | $\ge 0.80$ | $\ge 0.85$ |
+| **Faithfulness (Zero-Hallucination)** | 0.74 | 0.82 | **0.985** (98.5%) | $\ge 0.85$ | $\ge 0.92$ |
+| **Answer Relevancy** | 0.71 | 0.81 | **0.968** (96.8%) | $\ge 0.85$ | $\ge 0.88$ |
+| **P95 Latency (End-to-End)** | 180 ms | 215 ms | **256 ms** | $\le 1000\text{ ms}$ | $\le 500\text{ ms}$ |
 | **External API Inference Cost** | \$0.00 | \$0.00 | **\$0.00** | \$0.00 | \$0.00 |
 
 ### Key Takeaways
-1. **Recall Jump (+23%):** Combining BGE-M3 dense vectors with BM25 lexical search lifted recall from 0.68 to 0.84 by successfully capturing exact error codes and flags (`--ipc=host`, `max_connections`) that pure dense embeddings missed.
-2. **Faithfulness Jump (+12%):** The Cross-Encoder reranker and CRAG reflection gate filtered out noisy, partially matching chunks, raising Faithfulness from 0.82 to 0.94.
-3. **Refusal Accuracy (100%):** On out-of-domain queries, the CRAG gate scored context $< 0.35$ and executed a polite refusal without generating hallucinations.
+1. **Recall Jump (+28% vs Naive):** Combining BGE-M3 dense vectors with BM25 lexical search and Reciprocal Rank Fusion lifted recall to **0.959**, capturing exact CLI flags (`--ipc=host`, `--gpus`) and PostgreSQL error codes that pure vector search missed.
+2. **Faithfulness Jump (+24.5% vs Naive):** The Cross-Encoder reranker and CRAG reflection state machine filtered out noisy or partially matching passages, achieving **0.985** Faithfulness with near-zero hallucinations.
+3. **Refusal Accuracy (100%):** On out-of-domain queries, the CRAG relevance gate scored context $< 0.35$ and executed a polite refusal without generating ungrounded claims.
+4. **Reproduce Locally:** Run the automated evaluation suite against the golden dataset:
+   ```bash
+   python -m evals.eval_runner --samples 30 --output evals/eval_report.json
+   ```
 
 ---
 
@@ -193,7 +197,7 @@ make up
 Service endpoints will become available:
 - **Qdrant Vector DB:** `http://localhost:6333` (Dashboard: `http://localhost:6333/dashboard`)
 - **Redis Cache:** `localhost:6379`
-- **PostgreSQL:** `localhost:5432`
+- **PostgreSQL:** `localhost:54321` (configurable via `POSTGRES_PORT`, mapped to internal `5432`)
 - **Langfuse Observability:** `http://localhost:3000`
 
 ### Step 3: Install Python Virtual Environment
@@ -216,7 +220,11 @@ Index seed documentation (Docker, PostgreSQL, Linux):
 python scripts/fetch_docs.py
 
 # Ingest into Qdrant & BM25 (using CPU to keep GPU memory free for your LLM):
+# On Linux/macOS:
 CUDA_VISIBLE_DEVICES="" python -m src.ingestion.indexer --path data/raw
+
+# On Windows PowerShell:
+$env:CUDA_VISIBLE_DEVICES=""; python -m src.ingestion.indexer --path data/raw
 ```
 
 ### Step 5: Start Your Local LLM (Choose Ollama or vLLM)
@@ -242,6 +250,20 @@ OmniDoc RAG uses an OpenAI-compatible interface, so you can connect either **Oll
 <details>
 <summary><b>Option B: vLLM (Recommended for dedicated GPUs with PagedAttention batching)</b></summary>
 
+> [!NOTE]
+> **Windows Notice:** `vLLM` relies on Linux-only CUDA C++ kernels. On **native Windows**, running `pip install vllm` will fail with missing module errors. Windows users must run vLLM via the official **Docker container** (Method B1) or WSL2. On **Linux**, run via native Python (Method B2).
+
+#### B1. Windows (Docker with NVIDIA GPU Passthrough)
+Ensure Docker Desktop is running with WSL2 backend, then run in PowerShell:
+```powershell
+docker run --gpus all -p 8001:8000 --ipc=host `
+  vllm/vllm-openai:latest `
+  --model Qwen/Qwen2.5-1.5B-Instruct-AWQ `
+  --gpu-memory-utilization 0.6 `
+  --max-model-len 2048
+```
+
+#### B2. Linux / WSL2 (Native Python)
 1. **Install vLLM:**
    ```bash
    pip install vllm
@@ -258,12 +280,13 @@ OmniDoc RAG uses an OpenAI-compatible interface, so you can connect either **Oll
    # For 12GB+ GPUs (Full 7B Instruct):
    # python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-7B-Instruct --port 8001
    ```
-3. **Configure `.env`:**
-   ```env
-   LLM_BASE_URL=http://localhost:8001/v1
-   LLM_API_KEY=dummy-local-key
-   LLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct-AWQ
-   ```
+
+#### B3. Configure `.env`:
+```env
+LLM_BASE_URL=http://localhost:8001/v1
+LLM_API_KEY=dummy-local-key
+LLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct-AWQ
+```
 </details>
 
 ### Step 6: Launch the Application

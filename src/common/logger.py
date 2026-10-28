@@ -1,5 +1,6 @@
 """Structured JSON logging with asynchronous trace_id context propagation."""
 
+import contextlib
 import logging
 import sys
 from collections.abc import MutableMapping
@@ -51,6 +52,13 @@ def configure_logger(
     root_logger.setLevel(level)
     for handler in list(root_logger.handlers):
         root_logger.removeHandler(handler)
+
+    if hasattr(sys.stdout, "reconfigure"):
+        with contextlib.suppress(Exception):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        with contextlib.suppress(Exception):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
     # Standard stream handler
     handler = logging.StreamHandler(sys.stdout)

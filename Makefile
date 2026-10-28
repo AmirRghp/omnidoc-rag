@@ -41,7 +41,7 @@ test-integration:
 	pytest tests/integration/ -v
 
 eval:
-	python evals/run_benchmark.py
+	python -m evals.eval_runner --samples 30 --output evals/eval_report.json
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
