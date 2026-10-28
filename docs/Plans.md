@@ -91,7 +91,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 3: Document Acquisition, Parsing & Semantic Chunking
 
-### [ ] Task 3.1: Technical Documentation Fetcher Script
+### [x] Task 3.1: Technical Documentation Fetcher Script
 - **Objective:** Create an automated script to fetch official technical Markdown files (e.g., Docker Engine manuals) and add sample Persian technical guides.
 - **Reference Docs:** `docs/PRD.md` (Section 2 & 10), `docs/UX_FLOWS.md` (Flow 4).
 - **Target Files:**
