@@ -397,3 +397,12 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Job 2: `unit-tests` (`pytest tests/unit -v --cov=src`).
   - Job 3: `integration-tests` (with Qdrant and Redis service containers).
 - **Verification:** Local validation via `make test` or `act`.
+
+### [x] Task 10.4: Portfolio-Grade README.md with Benchmarks & Failure Analysis
+- **Objective:** Write the final engineering README.md highlighting architecture, quantitative benchmark tables, and honest edge-case failure modes.
+- **Reference Docs:** `docs/PRD.md` (Section 12: DoD), `docs/ARCHITECTURE.md` (Section 5 & 8).
+- **Target Files:**
+  - `README.md`
+- **Implementation Details:**
+  - Include system architecture diagram, ADR summary (why vLLM over Ollama, why BGE-M3, why CRAG), quantitative Ragas comparison table (`Naive Dense` vs `Hybrid` vs `Hybrid + Reranker + CRAG`), one-command Docker setup instructions, and a dedicated **Limitations & Edge Cases** section.
+- **Verification:** Verify all links in `README.md` point to valid files in `docs/`.
