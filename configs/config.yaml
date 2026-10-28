@@ -1,0 +1,25 @@
+app:
+  title: "OmniDoc RAG API"
+  version: "0.1.0"
+  environment: "development"
+  host: "0.0.0.0"
+  port: 8000
+
+retrieval:
+  collection_name: "tech_docs_bilingual"
+  top_k_dense: 20
+  top_k_sparse: 20
+  rrf_k: 60
+  rerank_top_n: 5
+  dense_model_name: "BAAI/bge-m3"
+  rerank_model_name: "BAAI/bge-reranker-large"
+  embedding_dimension: 1024
+
+crag:
+  correct_threshold: 0.70
+  ambiguous_threshold: 0.35
+  max_query_transformations: 2
+
+cache:
+  ttl_seconds: 86400  # 24 hours
+  semantic_cache_enabled: true

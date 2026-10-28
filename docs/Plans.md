@@ -36,7 +36,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Create a `Makefile` with targets: `up`, `down`, `lint`, `test`, `eval`.
 - **Verification:** `docker compose config` (validates YAML syntax without errors).
 
-### [ ] Task 1.3: Environment & YAML Configuration Loader
+### [x] Task 1.3: Environment & YAML Configuration Loader
 - **Objective:** Implement strongly-typed configuration management using `pydantic-settings` and `configs/config.yaml`.
 - **Reference Docs:** `docs/SECURITY.md` (Section 4: Secrets Management), `docs/CODE_STYLE.md` (Section 5: Typing & Pydantic V2).
 - **Target Files:**
