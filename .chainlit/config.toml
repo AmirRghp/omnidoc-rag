@@ -1,0 +1,74 @@
+[project]
+# List of environment variables to be provided by each user to use the app.
+user_env = []
+
+# Duration (in seconds) during which the session is saved when the connection is lost
+session_timeout = 3600
+
+# Duration (in seconds) of the user session expiry
+user_session_timeout = 1296000  # 15 days
+
+# Enable third parties caching (e.g., LangChain cache)
+cache = false
+
+# Whether to persist user environment variables (API keys) to the database
+persist_user_env = false
+
+# Whether to mask user environment variables (API keys) in the UI with password type
+mask_user_env = false
+
+# Authorized origins
+allow_origins = ["*"]
+
+[features]
+# Process and display HTML in messages.
+unsafe_allow_html = true
+
+# Process and display mathematical expressions.
+latex = false
+
+# Enable rendering of user messages markdown
+user_message_markdown = true
+
+# Autoscroll new user messages at the top of the window
+user_message_autoscroll = true
+
+# Autoscroll new assistant messages
+assistant_message_autoscroll = true
+
+# Automatically tag threads with the current chat profile (if a chat profile is used)
+auto_tag_thread = true
+
+# Allow users to edit their own messages
+edit_message = true
+
+# Allow users to share threads (backend + UI)
+allow_thread_sharing = false
+
+# Enable favorite messages
+favorites = false
+
+[features.spontaneous_file_upload]
+enabled = false
+
+[UI]
+# Name of the assistant.
+name = "OmniDoc RAG"
+
+# Default theme mode
+default_theme = "dark"
+
+# Description of the assistant.
+description = "سامانه پرسش‌وپاسخ فنی دو زبانه و ارزیابی مستندات"
+
+# Chain of Thought (CoT) display mode.
+cot = "full"
+
+# Specify a CSS file that can be used to customize the user interface.
+custom_css = "/public/custom.css"
+
+# The style of alert boxes.
+alert_style = "modern"
+
+[meta]
+generated_by = "2.11.0"

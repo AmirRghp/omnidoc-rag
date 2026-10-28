@@ -1,0 +1,199 @@
+/* ==========================================================================
+   OmniDoc RAG — Bilingual Design System & RTL Theming (DESIGN_SYSTEM.md)
+   ========================================================================== */
+
+/* 1. Typography Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Design Tokens — Dark Theme Palette */
+  --bg-dark: #090D16;
+  --surface-dark: #131B2E;
+  --surface-hover: #1E293B;
+  --border-dark: #1E293B;
+  --text-dark: #F1F5F9;
+  --text-muted: #94A3B8;
+
+  /* Accent Colors */
+  --primary-emerald: #10B981;
+  --primary-hover: #059669;
+  --secondary-indigo: #6366F1;
+  --status-success: #22C55E;
+  --status-warning: #F59E0B;
+  --status-error: #EF4444;
+
+  /* Fonts */
+  --font-persian: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-english: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* 2. Global Document & App Typography */
+html,
+body,
+#root {
+  font-family: var(--font-persian);
+  background-color: var(--bg-dark) !important;
+  color: var(--text-dark) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 3. Bi-directional (RTL / LTR) Content Rules */
+/* Allow automatic direction based on first strong directional character */
+.cl-message-content,
+.step-content,
+[data-step],
+.markdown-body,
+.cl-chat-message,
+p,
+li,
+blockquote {
+  unicode-bidi: plaintext;
+  text-align: start;
+  line-height: 1.65;
+  letter-spacing: -0.01em;
+}
+
+/* Persian heading enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-persian);
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.4;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* 4. Strict LTR Isolation for Code Blocks & Technical Identifiers */
+pre,
+pre code,
+.code-block,
+div[class*="code-"] {
+  direction: ltr !important;
+  text-align: left !important;
+  font-family: var(--font-mono) !important;
+  unicode-bidi: isolate !important;
+  border-radius: 8px !important;
+  background-color: #0B101D !important;
+  border: 1px solid var(--border-dark) !important;
+}
+
+/* Inline code tags inside mixed Persian text */
+:not(pre) > code {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+  display: inline-block;
+  vertical-align: baseline;
+  font-family: var(--font-mono) !important;
+  font-size: 0.88em !important;
+  padding: 0.15em 0.4em !important;
+  border-radius: 4px !important;
+  background-color: #172138 !important;
+  color: #34D399 !important; /* Emerald 400 */
+  border: 1px solid #23314F !important;
+  margin: 0 0.15rem;
+}
+
+/* 5. Thought Accordions & Reasoning Steps */
+.step-container,
+[data-step] {
+  border: 1px solid var(--border-dark) !important;
+  background-color: var(--surface-dark) !important;
+  border-radius: 10px !important;
+  margin-bottom: 0.75rem !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.step-container:hover {
+  border-color: #334155 !important;
+}
+
+/* Step Header & Badge */
+.step-title,
+.step-header {
+  font-family: var(--font-persian) !important;
+  font-weight: 600 !important;
+  color: var(--text-dark) !important;
+}
+
+/* Citation & Metadata Pills */
+.citation-pill,
+.source-pill,
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  direction: ltr;
+  unicode-bidi: isolate;
+  background-color: #1E293B;
+  color: #94A3B8;
+  border: 1px solid #334155;
+  margin: 0.2rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.citation-pill:hover,
+.source-pill:hover {
+  background-color: #334155;
+  color: var(--primary-emerald);
+  border-color: var(--primary-emerald);
+}
+
+/* 6. Chainlit Input & Search Box */
+textarea,
+input[type="text"] {
+  font-family: var(--font-persian) !important;
+  unicode-bidi: plaintext !important;
+  text-align: start !important;
+  background-color: var(--surface-dark) !important;
+  color: var(--text-dark) !important;
+  border: 1px solid #334155 !important;
+  border-radius: 10px !important;
+}
+
+textarea:focus,
+input[type="text"]:focus {
+  border-color: var(--primary-emerald) !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* 7. Action Buttons */
+button.primary,
+button[type="submit"] {
+  font-family: var(--font-persian) !important;
+  background-color: var(--primary-emerald) !important;
+  color: #FFFFFF !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: background-color 0.15s ease;
+}
+
+button.primary:hover,
+button[type="submit"]:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+/* 8. Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-dark);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

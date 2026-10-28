@@ -331,7 +331,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 9: Bilingual Chainlit Web UI & Bidirectional Layout
 
-### [ ] Task 9.1: Chainlit Application Setup & Persian/RTL Theming
+### [x] Task 9.1: Chainlit Application Setup & Persian/RTL Theming
 - **Objective:** Configure Chainlit with custom CSS supporting proper Persian right-to-left layout and bilingual fonts (Vazirmatn).
 - **Reference Docs:** `docs/DESIGN_SYSTEM.md` (Section 3: RTL Rules, Section 4: Typography), `docs/UX_FLOWS.md` (Flow 1 & 2).
 - **Target Files:**
