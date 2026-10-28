@@ -25,7 +25,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Block `.env*`, `*.pkl`, `data/processed/*`, and `__pycache__/` in `.gitignore`.
 - **Verification:** `ruff check . && mypy src`
 
-### [ ] Task 1.2: Docker Compose Infrastructure Setup
+### [x] Task 1.2: Docker Compose Infrastructure Setup
 - **Objective:** Configure containerized services for Qdrant, Redis, PostgreSQL, and Langfuse.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 3 & 5), `docs/DATABASE.md` (Section 1).
 - **Target Files:**
