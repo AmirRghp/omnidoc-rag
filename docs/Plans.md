@@ -234,7 +234,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Handle retry logic (up to 3 retries with exponential backoff) and timeout handling.
 - **Verification:** `pytest tests/unit/test_llm_client.py -v`
 
-### [ ] Task 6.3: Redis Exact & Semantic Query Cache
+### [x] Task 6.3: Redis Exact & Semantic Query Cache
 - **Objective:** Implement 2-layer Redis caching (SHA-256 exact match + normalized query key).
 - **Reference Docs:** `docs/DATABASE.md` (Section 2.1: Key Formats & Section 2.2: Semantic Cache), `docs/ARCHITECTURE.md` (Section 4.4).
 - **Target Files:**
