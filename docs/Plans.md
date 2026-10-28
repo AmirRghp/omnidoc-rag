@@ -75,7 +75,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Implement deterministic UUIDv4/MD5 point ID generator helper from `source_file + ":" + str(chunk_id)`.
 - **Verification:** `pytest tests/unit/test_schemas.py -v`
 
-### [ ] Task 2.2: Bilingual Input Sanitizer & Security Normalizer
+### [x] Task 2.2: Bilingual Input Sanitizer & Security Normalizer
 - **Objective:** Sanitize user queries and normalize Persian/English characters against prompt injection and unicode spoofing.
 - **Reference Docs:** `docs/SECURITY.md` (Section 3.2: Input Sanitization & Normalization), `docs/DATABASE.md` (Section 4).
 - **Target Files:**
