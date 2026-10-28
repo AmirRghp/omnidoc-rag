@@ -210,7 +210,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 6: Local vLLM Service, Security Prompts & Redis Cache
 
-### [ ] Task 6.1: Strict XML Prompt Templates & Guardrails
+### [x] Task 6.1: Strict XML Prompt Templates & Guardrails
 - **Objective:** Create prompt templates with `<retrieved_context>` XML wrappers for generation, CRAG grading, and query rewriting.
 - **Reference Docs:** `docs/SECURITY.md` (Section 3.1: Strict Context XML Enclosure, Section 3.3: Output Guardrails).
 - **Target Files:**
