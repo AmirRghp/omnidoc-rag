@@ -36,10 +36,11 @@ tests/
 # tests/unit/test_fusion.py
 from src.retrieval.fusion import reciprocal_rank_fusion
 
+
 def test_rrf_scoring_order():
     list_a = [{"doc_id": "doc_1", "content": "a"}, {"doc_id": "doc_2", "content": "b"}]
     list_b = [{"doc_id": "doc_2", "content": "b"}, {"doc_id": "doc_3", "content": "c"}]
-    
+
     # doc_2 is present in both lists and must rank #1
     fused = reciprocal_rank_fusion([list_a, list_b], k=60)
     assert fused[0]["doc_id"] == "doc_2"

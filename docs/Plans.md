@@ -102,7 +102,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Create a rich bilingual Persian/English Markdown troubleshooting guide (`sample_persian_docker_guide.md`) containing common Docker/PostgreSQL error codes (`ERR_DB_TIMEOUT`, `502 Bad Gateway`, `--ipc=host`, `permission denied`) to ensure bilingual test coverage.
 - **Verification:** `python scripts/fetch_docs.py` (verifies files exist in `data/raw/`).
 
-### [ ] Task 3.2: Header-Aware & Code-Safe Semantic Chunker
+### [x] Task 3.2: Header-Aware & Code-Safe Semantic Chunker
 - **Objective:** Implement a Markdown chunker that splits by headers while keeping code blocks and tables intact.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.1), `docs/TESTING.md` (Section 3.2: Chunker Structural Integrity).
 - **Target Files:**

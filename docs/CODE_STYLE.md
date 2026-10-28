@@ -58,6 +58,7 @@ from src.retrieval.dense import DenseRetriever
 ```python
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class RetrievedChunk(BaseModel):
     model_config = ConfigDict(strict=True)
 
@@ -78,13 +79,16 @@ class RetrievedChunk(BaseModel):
 # src/common/exceptions.py
 class BaseRAGException(Exception):
     """Base exception for all OmniDoc RAG domain errors."""
+
     def __init__(self, message: str, code: str):
         self.message = message
         self.code = code
         super().__init__(self.message)
 
+
 class DocumentParsingError(BaseRAGException):
     pass
+
 
 class InferenceEngineUnavailableError(BaseRAGException):
     pass
