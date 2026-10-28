@@ -1,5 +1,6 @@
 """Corrective RAG (CRAG) workflow and state graph definitions."""
 
+from src.graph.nodes import CRAGNodes
 from src.graph.state import (
     RAGState,
     RelevanceStatus,
@@ -8,6 +9,7 @@ from src.graph.state import (
 )
 
 __all__ = [
+    "CRAGNodes",
     "RAGState",
     "RelevanceStatus",
     "create_initial_state",

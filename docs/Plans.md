@@ -260,7 +260,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Implement `RAGState(TypedDict)` tracking `query`, `trace_id`, `normalized_query`, `retrieved_chunks`, `reranked_chunks`, `relevance_status`, `crag_score`, `rewritten_query`, `transformation_count`, `generation`, `citations`, `refusal_reason`.
 - **Verification:** `pytest tests/unit/test_graph_state.py -v`
 
-### [ ] Task 7.2: Control Plane Nodes Implementation
+### [x] Task 7.2: Control Plane Nodes Implementation
 - **Objective:** Implement each atomic graph node: `retrieve_node`, `grade_documents_node`, `rewrite_query_node`, `generate_node`, `refuse_node`.
 - **Reference Docs:** `docs/ARCHITECTURE.md` (Section 4.3), `docs/SECURITY.md` (Section 3.1).
 - **Target Files:**
