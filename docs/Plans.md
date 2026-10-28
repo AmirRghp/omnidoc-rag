@@ -64,7 +64,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 
 ## Phase 2: Core Data Schemas & Security Sanitization
 
-### [ ] Task 2.1: Core Domain Pydantic V2 Models
+### [x] Task 2.1: Core Domain Pydantic V2 Models
 - **Objective:** Define strict data contracts for document chunks, retrieval candidates, and citations.
 - **Reference Docs:** `docs/DATABASE.md` (Section 3.1: Point Payload Schema), `docs/CODE_STYLE.md` (Section 5).
 - **Target Files:**
