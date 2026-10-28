@@ -195,7 +195,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Deduplicate chunks by `chunk_id` and return Top-15 sorted candidates.
 - **Verification:** `pytest tests/unit/test_fusion.py -v`
 
-### [ ] Task 5.3: Cross-Encoder Reranker (`bge-reranker-v2-m3`)
+### [x] Task 5.3: Cross-Encoder Reranker (`bge-reranker-v2-m3`)
 - **Objective:** Rescore the Top-15 RRF candidates using the bilingual Cross-Encoder model and calibrate scores to $[0.0, 1.0]$.
 - **Reference Docs:** `docs/PRD.md` (Feature 2), `docs/CODE_STYLE.md` (Section 4: CPU-bound Offloading).
 - **Target Files:**
