@@ -131,7 +131,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Mock model weights in unit tests to run in <1 second.
 - **Verification:** `pytest tests/unit/test_embedder.py -v`
 
-### [ ] Task 4.2: Qdrant Vector Store Manager & Upsert Logic
+### [x] Task 4.2: Qdrant Vector Store Manager & Upsert Logic
 - **Objective:** Manage the `tech_docs_bilingual` Qdrant collection and perform idempotent batched upserts.
 - **Reference Docs:** `docs/DATABASE.md` (Section 3.1: Qdrant Vector Collection & Section 4: Deduplication).
 - **Target Files:**

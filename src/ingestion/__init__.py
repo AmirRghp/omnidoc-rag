@@ -2,5 +2,6 @@
 
 from src.ingestion.chunker import MarkdownSemanticChunker
 from src.ingestion.embedder import BGEEmbedder
+from src.ingestion.qdrant_store import QdrantStoreManager
 
-__all__ = ["MarkdownSemanticChunker", "BGEEmbedder"]
+__all__ = ["MarkdownSemanticChunker", "BGEEmbedder", "QdrantStoreManager"]
