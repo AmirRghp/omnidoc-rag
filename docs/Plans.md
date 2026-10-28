@@ -344,7 +344,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Set `dir="auto"` on message containers and define bidirectional styling for mixed Persian/English code spans.
 - **Verification:** Manual UI inspection via `chainlit run app.py --headless`.
 
-### [ ] Task 9.2: Interactive Chat Workflow, Step Collapsing & Citations Drawer
+### [x] Task 9.2: Interactive Chat Workflow, Step Collapsing & Citations Drawer
 - **Objective:** Connect Chainlit frontend to LangGraph stream, displaying real-time reasoning steps, citations, and feedback buttons.
 - **Reference Docs:** `docs/UX_FLOWS.md` (Flow 1: Query Execution & Flow 3: Feedback), `docs/DESIGN_SYSTEM.md` (Section 5: Components).
 - **Target Files:**

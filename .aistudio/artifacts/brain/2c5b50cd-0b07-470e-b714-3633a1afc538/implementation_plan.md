@@ -1,88 +1,101 @@
-# Task 8.1: API Schemas & RFC 7807 Exception Handlers
+# Task 9.2: Interactive Chat Workflow, Step Collapsing & Citations Drawer
 
-Implement strict Pydantic V2 request/response data contracts (`QueryRequest`, `QueryResponse`, `FeedbackRequest`, `IngestionResponse`, `ProblemDetails`) in `src/api/schemas.py` and global RFC 7807 Problem Details exception handlers in `src/api/errors.py`.
+Connect the Chainlit bilingual interface (`app.py`) to the LangGraph CRAG streaming workflow (`CRAGWorkflow.astream`), rendering collapsible reasoning steps (`🔍 Retrieval (Dense + Sparse)`, `⚖️ Fusion & Reranking`, `🎯 Quality Gate (CRAG)`), interactive side-drawer citations (`display="side"`), query rewrite notices, and user feedback actions, backed by unit tests in `tests/unit/test_chainlit_helpers.py`.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> Review the proposed API contract and error-handling design below before proceeding to implementation:
+> Review the key architectural and UX decisions below before proceeding to implementation:
 
-- **Input Security Validation at Boundary (`QueryRequest`)**: Validates `query` through `sanitize_query` from `src.common.security` (normalizing Persian characters `ی`/`ک`, stripping invisible bidirectional overrides, rejecting empty/whitespace-only inputs, and enforcing `1..1000` characters) alongside `session_id`, `temperature` ($[0.0, 2.0]$), and `enable_reflection`.
-- **Unified RFC 7807 Error Format (`src/api/errors.py`)**: Maps all `BaseRAGException` subclasses (`DocumentParsingError` $\rightarrow 422$, `InvalidInputSecurityError` $\rightarrow 400$, `InferenceEngineUnavailableError` $\rightarrow 503$, `VectorStoreTimeoutError` $\rightarrow 504$, `CacheServiceUnavailableError` $\rightarrow 503$, `ConfigurationError` $\rightarrow 500$), FastAPI `RequestValidationError` ($\rightarrow 422$), and unhandled exceptions ($\rightarrow 500$) into a consistent RFC 7807 payload containing `{ type, title, status, detail, instance, trace_id, code, timestamp }`.
-- **Trace ID Propagation**: Automatically resolves `trace_id` from `get_trace_id()` (`contextvars`), `request.state.trace_id`, or `X-Trace-ID` request header (with UUIDv4 fallback) so every error response can be correlated in logs.
+- **In-Process `CRAGWorkflow` Streaming with Sanitization Boundary**: `@cl.on_message` sanitizes incoming queries via `sanitize_query` (`src.common.security`) and streams directly from `get_crag_workflow().astream(...)` (reusing the singleton provider from `src.api.dependencies`), avoiding redundant HTTP serialization overhead while keeping a clean dependency-injection hook for unit tests.
+- **Three Collapsible Reasoning Steps (`cl.Step`)**:
+  - `🔍 Retrieval (Dense + Sparse)` — summarizes hybrid candidate count (`retrieved_chunks`) and active query.
+  - `⚖️ Fusion & Reranking` — displays top reranked chunks (`reranked_chunks`) with source file, chunk ID, and calibrated Cross-Encoder score pills.
+  - `🎯 Quality Gate (CRAG)` — displays CRAG relevance status (`CORRECT`, `AMBIGUOUS`, `INCORRECT`) and confidence score, plus an automatic rewrite notice (`"کوئری شما برای دقت بیشتر به عبارت تخصصی‌تر بازنویسی شد."`) if `rewrite_query` is triggered.
+- **Interactive Citations Drawer & Feedback Actions**:
+  - Citations are rendered both as inline LTR-isolated pills (`.citation-pill` in `public/custom.css`) and as `cl.Text(..., display="side")` elements so clicking a citation name opens Chainlit's side drawer with the source file, chunk ID / section heading, score, and excerpt.
+  - Thumbs-up / thumbs-down `cl.Action` buttons (`feedback_positive`, `feedback_negative`) record structured feedback logs correlated with `trace_id`.
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Defines the external REST & SSE API boundary contracts in `src/api/schemas.py` and centralizes RFC 7807 exception formatting and FastAPI handler registration in `src/api/errors.py`.
-- **Target Audience / Persona**: Downstream FastAPI middleware (`Task 8.2`), streaming/REST endpoints (`Task 8.3`), and the Chainlit frontend (`Task 9.2`).
-- **Key Value**: Enforces strict input validation at the HTTP edge and guarantees that no internal stack traces or unformatted errors leak to clients.
+- **What It Does**: Upgrades `app.py` from static Task 9.1 scaffolding to a live, streaming Corrective RAG assistant with full transparency into retrieval, reranking, CRAG grading, source attribution, and response feedback.
+- **Target Audience / Persona**: DevOps engineers, DBAs, and Linux administrators querying technical documentation in Persian and English.
+- **Key Value**: Provides radical transparency (`docs/DESIGN_SYSTEM.md` §1) by exposing candidate scores, CRAG gating decisions, and verifiable document excerpts in a collapsible, RTL-safe interface.
 
-## 2. User Experience & API Behavior
+## 2. User Experience & Visual Design
 
-- **Valid Query Request (`POST /api/v1/query` & `/api/v1/query/stream`)**:
-  - Client sends `{ "query": "...", "session_id": "...", "temperature": 0.2, "enable_reflection": true }`.
-  - `QueryRequest` normalizes Persian/English text and validates parameters.
-  - Synchronous endpoint returns `QueryResponse` with `query`, `answer`, `citations` (`list[CitationItem]`), `reflection_status` (`"CORRECT" | "AMBIGUOUS" | "INCORRECT"`), `latency_ms`, and `trace_id`.
-- **Domain Exception Flow (RFC 7807)**:
-  - If any route or service raises a `BaseRAGException` subclass (e.g., `InferenceEngineUnavailableError`), `rag_exception_handler` catches it, logs the event with `trace_id`, and returns a structured HTTP 503 JSON response matching RFC 7807.
+- **Flow 1 — Standard Query Execution (`docs/UX_FLOWS.md` Flow 1)**:
+  1. User submits a Persian or English technical question.
+  2. Collapsible `cl.Step` accordions (`🔍 Retrieval (Dense + Sparse)`, `⚖️ Fusion & Reranking`, `🎯 Quality Gate (CRAG)`) populate with real-time metrics from the workflow nodes.
+  3. Answer tokens stream into the assistant message (`msg.stream_token`), followed by inline citation pills and clickable side-drawer references (`cl.Text(display="side")`).
+- **Flow 2 — Ambiguous Query Rewrite (`docs/UX_FLOWS.md` Flow 2)**:
+  - When `rewrite_query` executes, the UI displays the bilingual notice (`"کوئری شما برای دقت بیشتر به عبارت تخصصی‌تر بازنویسی شد."`) alongside the refined technical query before running secondary retrieval.
+- **Flow 3 — Out-of-Domain Refusal & Feedback (`docs/UX_FLOWS.md` Flow 3)**:
+  - When `refuse` executes (`INCORRECT` status), the polite bilingual refusal message streams with zero hallucinated citations, and feedback action buttons allow rating the response.
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Strict Pydantic V2 Models with Normalized Reflection Status**
-  - *Chosen Approach*: Configure API schemas with `ConfigDict(strict=True)` while allowing `QueryResponse.reflection_status` to accept either lowercase (`"correct"`) from `RAGState` or uppercase (`"CORRECT"`) per `docs/API.md` (§2.2), normalizing to uppercase `"CORRECT" | "AMBIGUOUS" | "INCORRECT"`.
-  - *Why*: Bridges internal `RAGState` literals (`"correct"`, `"ambiguous"`, `"incorrect"`) and the public REST specification (`"CORRECT"`) without manual string conversion in route handlers.
-- **Decision 2: Combined RFC 7807 Payload Fields**
-  - *Chosen Approach*: Include `type`, `title`, `status`, `detail`, `instance`, `trace_id`, `code`, and `timestamp` in `ProblemDetails` and `build_problem_details`.
-  - *Why*: Satisfies both `docs/Plans.md` Task 8.1 (`{ type, title, status, detail, instance, trace_id }`) and `docs/API.md` §3 (`code`, `timestamp`).
+- **Decision 1: Pure Formatting & Builder Helpers in `app.py`**
+  - *Chosen Approach*: Extract deterministic formatting and element-construction logic (`format_retrieval_step_output`, `format_rerank_step_output`, `format_crag_step_output`, `build_citation_elements`, `format_citation_pills_markdown`, `build_feedback_actions`) as pure, strictly-typed functions in `app.py`.
+  - *Why*: Enables fast, deterministic unit testing in `tests/unit/test_chainlit_helpers.py` without requiring a live browser or external vector/LLM servers, while preserving full compatibility with `tests/unit/test_chainlit_theming.py`.
+- **Decision 2: Side-Drawer Citation Linking via `cl.Text(display="side")`**
+  - *Chosen Approach*: Create a `cl.Text` element per citation whose `name` matches the citation label referenced in the message footer (e.g., `[1] docker_networking_bridge.md#chunk-0`), including `source_file`, `chunk_id`, `section_heading`, `relevance_score`, and `snippet`.
+  - *Why*: Native Chainlit pattern that automatically turns matching citation names in the message into clickable links opening the side drawer.
 
 ## 4. Technical Architecture & Data Strategy
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           src/api/schemas.py                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ├── QueryRequest(query, session_id, temperature, enable_reflection)    │
-│  ├── QueryResponse(query, answer, citations, reflection_status,         │
-│  │                 latency_ms, trace_id)                                │
-│  ├── FeedbackRequest(trace_id, rating, score, comment, session_id)      │
-│  ├── FeedbackResponse(status, trace_id, message)                        │
-│  ├── IngestionResponse(job_id, filename, status, message,               │
-│  │                     chunks_created, total_tokens, duration_seconds,  │
-│  │                     error)                                           │
-│  └── ProblemDetails(type, title, status, detail, instance, trace_id,    │
-│                     code, timestamp)                                    │
-└────────────────────────────────────┬────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        User Message (@cl.on_message)                     │
+└────────────────────────────────────┬─────────────────────────────────────┘
                                      │
                                      ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            src/api/errors.py                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ├── resolve_trace_id(request: Request) -> str                          │
-│  ├── build_problem_details(exc: BaseRAGException, instance: str,        │
-│  │                         trace_id: str) -> dict[str, Any]             │
-│  ├── rag_exception_handler(request: Request, exc: BaseRAGException)     │
-│  ├── validation_exception_handler(request: Request,                     │
-│  │                                exc: RequestValidationError)          │
-│  ├── unhandled_exception_handler(request: Request, exc: Exception)      │
-│  └── register_exception_handlers(app: FastAPI) -> None                  │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│             Input Sanitization (sanitize_query + trace_id)               │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                 CRAGWorkflow.astream(query, trace_id, ...)               │
+├──────────────────────────────────────────────────────────────────────────┤
+│  ├── "retrieve" event:                                                   │
+│  │     ├── cl.Step("🔍 Retrieval (Dense + Sparse)")                      │
+│  │     └── cl.Step("⚖️ Fusion & Reranking")                              │
+│  ├── "grade_documents" event:                                            │
+│  │     └── cl.Step("🎯 Quality Gate (CRAG)")                             │
+│  ├── "rewrite_query" event:                                              │
+│  │     └── Rewrite Alert Banner + Secondary Retrieval Loop               │
+│  └── "generate" / "refuse" event:                                        │
+│        ├── Stream Answer Tokens (tokenize_generation_stream)             │
+│        ├── Attach Side-Drawer Citations (cl.Text display="side")         │
+│        └── Attach Feedback Buttons (cl.Action positive / negative)       │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Target Files
-- `src/api/schemas.py`
-- `src/api/errors.py`
-- `src/api/__init__.py`
-- `tests/unit/test_api_schemas.py`
-- `docs/Plans.md` (mark Task 8.1 `[x]`)
+### Target Files & Signatures
+- **`app.py`**:
+  - `STEP_RETRIEVAL_NAME = "🔍 Retrieval (Dense + Sparse)"`
+  - `STEP_RERANK_NAME = "⚖️ Fusion & Reranking"`
+  - `STEP_CRAG_NAME = "🎯 Quality Gate (CRAG)"`
+  - `format_retrieval_step_output(retrieved_chunks: list[RetrievedChunk], query: str) -> str`
+  - `format_rerank_step_output(reranked_chunks: list[RetrievedChunk]) -> str`
+  - `format_crag_step_output(status: str, score: float, rewritten_query: str | None = None) -> str`
+  - `format_citation_label(index: int, source_file: str, chunk_id: str | int | None = None) -> str`
+  - `format_citation_pills_markdown(citations: list[CitationItem], chunks: list[RetrievedChunk] | None = None) -> str`
+  - `build_citation_elements(citations: list[CitationItem], chunks: list[RetrievedChunk] | None = None) -> list[cl.Text]`
+  - `build_feedback_actions(trace_id: str) -> list[cl.Action]`
+  - `on_chat_start() -> None`
+  - `on_message(message: cl.Message) -> None`
+  - `on_feedback_action(action: cl.Action) -> None` (`@cl.action_callback`)
+- **`tests/unit/test_chainlit_helpers.py`**:
+  - Unit tests covering step formatting helpers, citation pill & drawer element builders, feedback action builders, input validation error handling, and end-to-end `@cl.on_message` workflow streaming (happy path, query rewrite path, refusal path) with mocked Chainlit primitives.
+- **`docs/Plans.md`**:
+  - Mark Task 9.2 as completed (`[x]`).
 
 ### Acceptance Criteria & Verification
-1. **API Request & Response Schemas (`src/api/schemas.py`)**:
-   - `QueryRequest`, `QueryResponse`, `FeedbackRequest`, `IngestionResponse`, and `ProblemDetails` validate valid inputs and reject invalid types/ranges under Pydantic V2.
-   - `QueryRequest` sanitizes Persian/English text and rejects empty or $>1000$-char queries.
-2. **RFC 7807 Exception Handlers (`src/api/errors.py`)**:
-   - All `BaseRAGException` subclasses map to their exact HTTP status code and return `{ type, title, status, detail, instance, trace_id, code, timestamp }`.
-   - FastAPI `RequestValidationError` and unexpected `Exception` are also formatted as RFC 7807 JSON responses without leaking internal stack traces.
-3. **Verification Commands**:
-   - `.venv/bin/pytest tests/unit/test_api_schemas.py -v` passes with 0 failures.
-   - `.venv/bin/ruff check src tests` and `.venv/bin/ruff format --check src/api tests/unit/test_api_schemas.py` pass with 0 errors.
-   - `.venv/bin/mypy --strict src` passes with 0 errors.
+1. **Collapsible Steps (`cl.Step`)**: Renders `🔍 Retrieval (Dense + Sparse)`, `⚖️ Fusion & Reranking`, and `🎯 Quality Gate (CRAG)` with candidate counts, scores, and CRAG decision states.
+2. **Citations & Side Drawer**: Renders inline `.citation-pill` badges and attaches clickable `cl.Text(display="side")` elements containing `source_file`, `chunk_id`, `section_heading`, `relevance_score`, and `snippet`.
+3. **Bilingual Rewrite & Refusal Support**: Handles `rewrite_query` notification and `refuse` zero-citation responses cleanly, plus thumbs-up/down feedback actions correlated by `trace_id`.
+4. **Verification Commands**:
+   - `pytest tests/unit/test_chainlit_helpers.py tests/unit/test_chainlit_theming.py -v` passes with 0 failures.
+   - `ruff check app.py tests/unit/test_chainlit_helpers.py` and `mypy --strict app.py src` pass with 0 errors.
