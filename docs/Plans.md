@@ -302,7 +302,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
   - Custom exception handler mapping `BaseRAGException` subclasses to standard JSON `{ type, title, status, detail, instance, trace_id }`.
 - **Verification:** `pytest tests/unit/test_api_schemas.py -v`
 
-### [ ] Task 8.2: Security Middleware & Dependency Injection
+### [x] Task 8.2: Security Middleware & Dependency Injection
 - **Objective:** Build API Key authentication, trace ID context injection, and sliding-window rate limiter.
 - **Reference Docs:** `docs/SECURITY.md` (Section 4.1: API Key Auth, Section 4.3: Rate Limiting), `docs/API.md` (Section 1).
 - **Target Files:**
@@ -312,7 +312,7 @@ Before starting any task in this plan, the AI Coding Agent **MUST** adhere to th
 - **Implementation Details:**
   - Middleware injecting `X-Trace-ID` into `contextvars`.
   - `verify_api_key` dependency verifying `Authorization: Bearer <API_KEY>`.
-  - Redis-based sliding-window rate limiter (60 requests/minute per IP).
+  - Redis-based sliding-window rate limiter (30 requests/minute per IP, 5 uploads/hour).
 - **Verification:** `pytest tests/unit/test_middleware.py -v`
 
 ### [x] Task 8.3: SSE Streaming Endpoint (`/api/v1/query/stream`)

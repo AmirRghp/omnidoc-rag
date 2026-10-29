@@ -4,7 +4,7 @@ import hashlib
 import time
 from collections import OrderedDict
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from types import TracebackType
 from typing import Any
 
@@ -17,6 +17,8 @@ from src.common.exceptions import CacheServiceUnavailableError
 from src.common.logger import get_logger
 from src.common.schemas import CitationItem
 from src.common.security import normalize_persian_text, strip_directional_overrides
+
+UTC = timezone.utc
 
 logger = get_logger(__name__)
 
@@ -80,7 +82,7 @@ class RedisQueryCache:
         port: int | None = None,
         password: str | None = None,
         ttl_seconds: int | None = None,
-        key_prefix: str = "cache:response",
+        key_prefix: str = "cache:query",
         client: aioredis.Redis | None = None,
         settings: Settings | None = None,
         l1_maxsize: int = 1000,

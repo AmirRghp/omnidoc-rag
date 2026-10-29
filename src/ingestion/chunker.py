@@ -12,6 +12,7 @@ from src.common.schemas import DocumentChunkPayload
 from src.common.security import normalize_persian_text, strip_directional_overrides
 
 DEFAULT_MAX_TOKENS: int = 512
+DEFAULT_OVERLAP_TOKENS: int = 50
 DEFAULT_ENCODING_NAME: str = "cl100k_base"
 DEFAULT_SECTION_HEADING: str = "# Introduction"
 PERSIAN_SCRIPT_RATIO_THRESHOLD: float = 0.25
@@ -54,11 +55,15 @@ class MarkdownSemanticChunker:
     def __init__(
         self,
         max_tokens: int = DEFAULT_MAX_TOKENS,
+        overlap_tokens: int = DEFAULT_OVERLAP_TOKENS,
         encoding_name: str = DEFAULT_ENCODING_NAME,
     ) -> None:
         if max_tokens <= 0:
             raise ValueError(f"max_tokens must be positive, got {max_tokens}")
+        if overlap_tokens < 0:
+            raise ValueError(f"overlap_tokens must be non-negative, got {overlap_tokens}")
         self.max_tokens = max_tokens
+        self.overlap_tokens = min(overlap_tokens, max(0, max_tokens // 5))
         self.encoding_name = encoding_name
         self._encoding: tiktoken.Encoding | None = self._load_encoding(encoding_name)
 
@@ -191,9 +196,17 @@ class MarkdownSemanticChunker:
             try:
                 source_file = path.resolve().relative_to(Path(root_dir).resolve()).as_posix()
             except ValueError:
-                source_file = path.as_posix()
+                source_file = path.name
         else:
-            source_file = path.as_posix()
+            resolved = path.resolve()
+            raw_root = Path("data/raw").resolve()
+            cwd = Path.cwd().resolve()
+            if resolved.is_relative_to(raw_root):
+                source_file = resolved.relative_to(raw_root).as_posix()
+            elif resolved.is_relative_to(cwd):
+                source_file = resolved.relative_to(cwd).as_posix()
+            else:
+                source_file = path.name
 
         return self.chunk_text(
             text=raw_text,
@@ -393,8 +406,21 @@ class MarkdownSemanticChunker:
 
             if current_sentences and (current_tokens + sentence_tokens > self.max_tokens):
                 pieces.append(" ".join(current_sentences))
-                current_sentences = [sentence]
-                current_tokens = sentence_tokens
+                overlap_list: list[str] = []
+                overlap_toks = 0
+                if self.overlap_tokens > 0:
+                    for prev_sent in reversed(current_sentences):
+                        prev_toks = self.count_tokens(prev_sent)
+                        if (
+                            overlap_toks + prev_toks <= self.overlap_tokens
+                            and prev_toks + sentence_tokens <= self.max_tokens
+                        ):
+                            overlap_list.insert(0, prev_sent)
+                            overlap_toks += prev_toks
+                        else:
+                            break
+                current_sentences = [*overlap_list, sentence]
+                current_tokens = self.count_tokens(" ".join(current_sentences))
             else:
                 current_sentences.append(sentence)
                 current_tokens += sentence_tokens

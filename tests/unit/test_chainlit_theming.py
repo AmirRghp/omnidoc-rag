@@ -1,8 +1,13 @@
 """Unit tests for Chainlit configuration, bilingual RTL typography, and CSS theming (Task 9.1)."""
 
 from pathlib import Path
+from typing import Any
 
-import tomli
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
+
 from chainlit.server import app as chainlit_app
 from starlette.testclient import TestClient
 
@@ -15,7 +20,7 @@ def test_chainlit_config_file() -> None:
     assert config_path.is_file(), ".chainlit/config.toml must exist"
 
     with open(config_path, "rb") as f:
-        data = tomli.load(f)
+        data: dict[str, Any] = tomllib.load(f)
 
     ui = data.get("UI", {})
     assert ui.get("name") == "OmniDoc RAG"

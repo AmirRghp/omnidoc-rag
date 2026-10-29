@@ -1,13 +1,15 @@
 """FastAPI request and response Pydantic V2 schemas."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.common.schemas import CitationItem
 from src.common.security import sanitize_query
+
+UTC = timezone.utc
 
 ReflectionStatus = Literal["CORRECT", "AMBIGUOUS", "INCORRECT"]
 FeedbackRating = Literal["up", "down", "positive", "negative"]
@@ -214,3 +216,59 @@ class ProblemDetails(BaseModel):
         default_factory=lambda: datetime.now(UTC).isoformat(),
         description="ISO 8601 UTC timestamp of the error occurrence.",
     )
+
+
+class EvalRunRequest(BaseModel):
+    """Schema for triggering an evaluation benchmark run (POST /api/v1/eval/run)."""
+
+    model_config = ConfigDict(strict=True)
+
+    sample_limit: int = Field(
+        default=50,
+        ge=1,
+        le=500,
+        description="Maximum number of golden dataset samples to evaluate.",
+    )
+    compare_with_baseline: bool = Field(
+        default=True,
+        description="Whether to compare metrics against baseline floors.",
+    )
+
+
+class EvalMetricsPayload(BaseModel):
+    """Aggregate Ragas evaluation metrics summary."""
+
+    model_config = ConfigDict(strict=True)
+
+    context_recall: float = Field(..., ge=0.0, le=1.0)
+    context_precision: float = Field(..., ge=0.0, le=1.0)
+    faithfulness: float = Field(..., ge=0.0, le=1.0)
+    answer_relevancy: float = Field(..., ge=0.0, le=1.0)
+
+
+class EvalRunResponse(BaseModel):
+    """Schema for evaluation benchmark run results (docs/API.md §2.5)."""
+
+    model_config = ConfigDict(strict=True)
+
+    run_id: str = Field(
+        default_factory=lambda: (
+            f"eval_{datetime.now(UTC).strftime('%Y%m%d')}_{uuid.uuid4().hex[:4]}"
+        ),
+        min_length=1,
+        description="Unique evaluation run identifier.",
+    )
+    metrics: EvalMetricsPayload = Field(..., description="Aggregated Ragas metric scores.")
+    p95_latency_ms: int = Field(..., ge=0, description="95th percentile query latency in ms.")
+    pass_threshold: bool = Field(..., description="Whether all quality gates passed.")
+
+
+class HealthResponse(BaseModel):
+    """Schema for service health check endpoints."""
+
+    model_config = ConfigDict(strict=True)
+
+    status: Literal["healthy", "degraded"] = Field(default="healthy")
+    environment: str = Field(default="development")
+    version: str = Field(default="0.1.0")
+

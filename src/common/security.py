@@ -1,6 +1,7 @@
 """Bilingual input sanitization and Persian/English Unicode security normalization."""
 
 import re
+import unicodedata
 
 from src.common.exceptions import InvalidInputSecurityError
 
@@ -20,11 +21,12 @@ _DIRECTIONAL_AND_CONTROL_PATTERN: re.Pattern[str] = re.compile(
 
 
 def normalize_persian_text(text: str) -> str:
-    """Normalize Arabic character variants (ي, ى, ك) to standard Persian (ی, ک).
+    """Normalize Arabic character variants (ي, ى, ك) to standard Persian (ی, ک) with Unicode NFC.
 
     Preserves Persian Zero-Width Non-Joiner (U+200C) and English technical tokens.
     """
-    return text.translate(_PERSIAN_CHAR_MAP)
+    nfc_text = unicodedata.normalize("NFC", text)
+    return nfc_text.translate(_PERSIAN_CHAR_MAP)
 
 
 def strip_directional_overrides(text: str) -> str:
@@ -32,8 +34,42 @@ def strip_directional_overrides(text: str) -> str:
     return _DIRECTIONAL_AND_CONTROL_PATTERN.sub("", text)
 
 
+def tokenize_generation_stream(text: str) -> list[str]:
+    """Split generated response text into natural token slices preserving whitespace."""
+    if not text:
+        return []
+    chunks = re.findall(r"\s*\S+", text)
+    if not chunks and text:
+        return [text]
+    matched_len = sum(len(c) for c in chunks)
+    if matched_len < len(text):
+        chunks.append(text[matched_len:])
+    return chunks
+
+
+ALLOWED_UPLOAD_EXTENSIONS: frozenset[str] = frozenset({".md", ".pdf", ".txt", ".html"})
+
+
+def validate_safe_filename(filename: str) -> str:
+    """Validate uploaded filename against path traversal and enforce allowed extensions."""
+    clean = strip_directional_overrides(filename).strip()
+    if not clean or "/" in clean or "\\" in clean or ".." in clean or clean.startswith("."):
+        raise InvalidInputSecurityError(
+            message="Invalid or unsafe filename",
+            detail="Filename must not be empty or contain path traversal sequences.",
+        )
+    dot_idx = clean.rfind(".")
+    ext = clean[dot_idx:].lower() if dot_idx != -1 else ""
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise InvalidInputSecurityError(
+            message=f"Unsupported file extension '{ext}'",
+            detail=f"Allowed extensions are: {sorted(ALLOWED_UPLOAD_EXTENSIONS)}",
+        )
+    return clean
+
+
 def sanitize_query(query: str, max_length: int = MAX_QUERY_LENGTH) -> str:
-    """Sanitize, normalize, and validate a bilingual user query.
+    """Sanitize, normalize (Unicode NFC + Persian), and validate a bilingual user query.
 
     Args:
         query: Raw user query string.
@@ -71,3 +107,5 @@ def sanitize_query(query: str, max_length: int = MAX_QUERY_LENGTH) -> str:
         )
 
     return normalized
+
+

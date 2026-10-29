@@ -12,13 +12,13 @@ retrieval:
   rrf_k: 60
   rerank_top_n: 5
   dense_model_name: "BAAI/bge-m3"
-  rerank_model_name: "BAAI/bge-reranker-large"
+  rerank_model_name: "BAAI/bge-reranker-v2-m3"
   embedding_dimension: 1024
 
 crag:
   correct_threshold: 0.70
   ambiguous_threshold: 0.35
-  max_query_transformations: 2
+  max_query_transformations: 1
 
 cache:
   ttl_seconds: 86400  # 24 hours

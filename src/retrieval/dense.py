@@ -12,6 +12,7 @@ from src.common.exceptions import VectorStoreTimeoutError
 from src.common.logger import get_logger
 from src.common.schemas import RetrievedChunk
 from src.ingestion.embedder import BGEEmbedder
+from src.ingestion.qdrant_store import create_async_qdrant_client
 
 logger = get_logger(__name__)
 
@@ -58,22 +59,7 @@ class DenseRetriever:
     def client(self) -> AsyncQdrantClient:
         """Get or lazily instantiate AsyncQdrantClient."""
         if self._client is None:
-            https = self.settings.qdrant_https
-            if https is None:
-                https = (
-                    False
-                    if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"}
-                    else None
-                )
-
-            self._client = AsyncQdrantClient(
-                host=self.settings.qdrant_host,
-                port=self.settings.qdrant_port,
-                grpc_port=self.settings.qdrant_grpc_port,
-                api_key=self.settings.qdrant_api_key,
-                https=https,
-                prefer_grpc=False,
-            )
+            self._client = create_async_qdrant_client(self.settings)
         return self._client
 
     @property
@@ -125,7 +111,7 @@ class DenseRetriever:
                 ),
                 timeout=self.timeout_seconds,
             )
-        except TimeoutError as exc:
+        except (TimeoutError, asyncio.TimeoutError) as exc:
             logger.warning(
                 "dense_retrieval_timeout_degraded",
                 collection=self.collection_name,

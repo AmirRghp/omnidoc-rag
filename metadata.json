@@ -1,0 +1,5 @@
+{
+  "name": "OmniDoc RAG",
+  "description": "Enterprise-grade Bilingual (Persian/English) Corrective RAG & Hybrid Retrieval System for Technical Documentation.",
+  "requestFramePermissions": []
+}

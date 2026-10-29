@@ -113,11 +113,26 @@ def format_retrieved_context(chunks: Sequence[RetrievedChunk]) -> str:
     return f"<retrieved_context>\n{inner_xml}\n</retrieved_context>"
 
 
+_CODE_OR_FLAG_STRIP_PATTERN: re.Pattern[str] = re.compile(
+    r"(`{3,}|~{3,})[\s\S]*?\1|`[^`\n]+`|(?<![\w\u0600-\u06FF])--?[a-zA-Z0-9][\w\-=./:]*|(?:/[\w.\-]+){2,}"
+)
+
+
 def detect_query_language(query: str) -> Literal["fa", "en"]:
-    """Detect primary language ('fa' or 'en') of a user query based on script ratio."""
-    persian_chars = len(_PERSIAN_CHAR_PATTERN.findall(query))
-    latin_chars = len(re.findall(r"[a-zA-Z]", query))
-    if persian_chars > 0 and persian_chars >= latin_chars:
+    """Detect primary language ('fa' or 'en') of a user query based on script ratio.
+
+    Strips inline/fenced code blocks, CLI flags, and file paths first so Persian queries
+    containing longer English commands or paths are still accurately classified as 'fa'.
+    """
+    prose = _CODE_OR_FLAG_STRIP_PATTERN.sub(" ", query)
+    persian_chars = len(_PERSIAN_CHAR_PATTERN.findall(prose))
+    latin_chars = len(re.findall(r"[a-zA-Z]", prose))
+    total = persian_chars + latin_chars
+    if total == 0:
+        persian_chars = len(_PERSIAN_CHAR_PATTERN.findall(query))
+        latin_chars = len(re.findall(r"[a-zA-Z]", query))
+        total = persian_chars + latin_chars
+    if total > 0 and (persian_chars / total) >= 0.25:
         return "fa"
     return "en"
 

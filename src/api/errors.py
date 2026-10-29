@@ -1,7 +1,7 @@
 """RFC 7807 Problem Details exception formatters and FastAPI global error handlers."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from src.api.schemas import ProblemDetails
 from src.common.exceptions import BaseRAGException
 from src.common.logger import get_logger, get_trace_id
+
+UTC = timezone.utc
 
 logger = get_logger(__name__)
 

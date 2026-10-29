@@ -2,18 +2,19 @@
 
 import html
 import os
+import re
 import uuid
 from typing import Any
 
 import chainlit as cl
 
-from src.api.routes import tokenize_generation_stream
 from src.common.config import create_settings
 from src.common.exceptions import InvalidInputSecurityError
 from src.common.logger import configure_logger, get_logger, set_trace_id
 from src.common.schemas import CitationItem, RetrievedChunk
-from src.common.security import sanitize_query
+from src.common.security import sanitize_query, tokenize_generation_stream
 from src.graph.workflow import CRAGWorkflow
+from src.services.cache import RedisQueryCache
 
 logger = get_logger(__name__)
 
@@ -25,12 +26,28 @@ REWRITE_ALERT_TEXT = "کوئری شما برای دقت بیشتر به عبار
 
 _workflow_instance: CRAGWorkflow | None = None
 
+_DANGEROUS_HTML_RE = re.compile(
+    r"<\s*/?\s*(?:script|iframe|object|embed|svg|style|link|meta|form|input|button|base)\b[^>]*>"
+    r"|on\w+\s*=\s*[\"'][^\"']*[\"']"
+    r"|javascript\s*:",
+    re.IGNORECASE,
+)
+
+
+def sanitize_markdown_html(text: str) -> str:
+    """Escape dangerous HTML/XSS constructs in LLM output while preserving Markdown and code."""
+    if not text:
+        return ""
+    return _DANGEROUS_HTML_RE.sub(lambda m: html.escape(m.group(0)), text)
+
 
 def get_crag_workflow() -> CRAGWorkflow:
     """Return or lazily initialize the singleton CRAGWorkflow instance."""
     global _workflow_instance
     if _workflow_instance is None:
-        _workflow_instance = CRAGWorkflow(settings=create_settings())
+        settings = create_settings()
+        cache = RedisQueryCache(settings=settings) if settings.semantic_cache_enabled else None
+        _workflow_instance = CRAGWorkflow(settings=settings, cache=cache)
     return _workflow_instance
 
 
@@ -169,7 +186,8 @@ def format_citation_pills_markdown(
         chunk_id = _resolve_chunk_id(idx, cit, chunks)
         safe_label = html.escape(format_citation_label(idx + 1, cit.source_file, chunk_id))
         pills.append(
-            f'<span class="citation-pill" dir="ltr">{safe_label} ({cit.relevance_score:.2f})</span>'
+            f'<span class="citation-pill" dir="ltr" role="button" tabindex="0" '
+            f'aria-label="Citation {safe_label}">{safe_label} ({cit.relevance_score:.2f})</span>'
         )
 
     pills_row = " ".join(pills)
@@ -352,7 +370,7 @@ async def on_message(message: cl.Message) -> None:
 
             elif "generate" in event:
                 node_data = event["generate"]
-                generation_text = str(node_data.get("generation", ""))
+                generation_text = sanitize_markdown_html(str(node_data.get("generation", "")))
                 raw_citations = node_data.get("citations", [])
                 final_citations = [
                     c if isinstance(c, CitationItem) else CitationItem.model_validate(c)
@@ -363,7 +381,7 @@ async def on_message(message: cl.Message) -> None:
 
             elif "refuse" in event:
                 node_data = event["refuse"]
-                refusal_text = str(node_data.get("generation", ""))
+                refusal_text = sanitize_markdown_html(str(node_data.get("generation", "")))
                 final_citations = []
                 for token in tokenize_generation_stream(refusal_text):
                     await response_msg.stream_token(token)

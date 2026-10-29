@@ -226,3 +226,21 @@ class TestBM25StoreManager:
         # Verify no leftover temporary files remain after failed save
         assert list(tmp_path.glob(".bm25_index_*.tmp")) == []
         assert not index_file.exists()
+
+    def test_sha256_integrity_verification_rejects_tampered_pickle(
+        self,
+        tmp_path: Path,
+        sample_bilingual_chunks: list[DocumentChunkPayload],
+    ) -> None:
+        index_file = tmp_path / "bm25_index.pkl"
+        manager = BM25StoreManager(index_path=index_file)
+        manager.build_index(sample_bilingual_chunks, persist=True)
+        assert manager.signature_path.is_file()
+
+        # Tamper with the persisted pickle file
+        index_file.write_bytes(index_file.read_bytes() + b"corrupted")
+
+        reader = BM25StoreManager(index_path=index_file)
+        with pytest.raises(ValueError, match="BM25 index integrity check failed"):
+            reader.load()
+

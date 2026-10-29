@@ -13,18 +13,31 @@ OmniDoc RAG employs a **3-Tier Testing Pyramid**:
 ## 2. Test File Structure
 ```text
 tests/
+├── conftest.py
 ├── unit/
+│   ├── test_app.py               # Chainlit bilingual UI, RTL & XSS sanitization
+│   ├── test_bm25_store.py        # BM25s persistence & SHA-256 integrity verification
+│   ├── test_cache.py             # Redis query cache & fallback behavior
 │   ├── test_chunker.py           # Header-aware splitting & code block boundaries
+│   ├── test_config.py            # Settings & env override precedence
+│   ├── test_crag_workflow.py     # LangGraph CRAG nodes, reflection & streaming
+│   ├── test_dense_retriever.py   # Qdrant vector search & degraded mode
+│   ├── test_embedder.py          # BGE-M3 dense embedding wrapper
+│   ├── test_eval_runner.py       # Ragas benchmark evaluation & gating logic
+│   ├── test_exceptions.py        # Domain error hierarchy & RFC 7807 mapping
 │   ├── test_fusion.py            # RRF reciprocal rank fusion correctness
-│   ├── test_crag_evaluator.py    # Rule-based and LLM grading edge cases
-│   └── test_schemas.py           # Pydantic V2 validation & serialization
-├── integration/
-│   ├── test_qdrant_retriever.py  # Hybrid upsert and search queries
-│   ├── test_redis_cache.py       # Cache set, get, TTL, and invalidation
-│   └── test_api_routes.py        # FastAPI TestClient endpoints & SSE streams
-└── evals/
-    ├── test_ragas_benchmarks.py  # Quantitative eval suite
-    └── test_hallucination_gate.py# DeepEval adversarial assertions
+│   ├── test_indexer.py           # End-to-end ingestion pipeline
+│   ├── test_llm_client.py        # Async vLLM client & exponential backoff
+│   ├── test_logger.py            # JSON structured logging & trace_id contextvar
+│   ├── test_middleware.py        # TraceID cleanup & sliding-window rate limiter
+│   ├── test_prompt_builder.py    # Bilingual prompt building & language detection
+│   ├── test_qdrant_store.py      # Qdrant collection & payload index creation
+│   ├── test_reranker.py          # Cross-Encoder reranking via asyncio.to_thread
+│   ├── test_schemas.py           # Pydantic V2 validation & serialization
+│   ├── test_security.py          # NFC normalization, prompt injection & path safety
+│   └── test_sparse_retriever.py  # BM25s sparse retrieval
+└── integration/
+    └── test_api.py               # FastAPI TestClient endpoints, RBAC & SSE streams
 ```
 
 ---
@@ -55,8 +68,8 @@ def test_rrf_scoring_order():
 
 ## 4. Quantitative RAG Evaluation (Ragas Pipeline)
 
-### 4.1 Evaluation Dataset (`data/golden_eval_dataset.json`)
-The benchmark runs against 50 manually curated technical QA pairs covering:
+### 4.1 Evaluation Dataset (`evals/datasets/golden_bilingual_eval.json`)
+The benchmark runs against manually curated bilingual technical QA pairs covering:
 - Exact error codes (e.g., `dial unix /var/run/docker.sock: connect: permission denied`).
 - Configuration directives (e.g., `max_connections`, `shared_buffers`).
 - Out-of-domain questions to verify refusal behavior.
@@ -80,17 +93,17 @@ If a PR or prompt modification causes `Faithfulness` to regress by more than 3% 
 # Run unit tests only (fast)
 pytest tests/unit -v
 
-# Run integration tests (requires docker containers active)
+# Run integration tests
 pytest tests/integration -v
 
 # Run full test suite with coverage report
 pytest --cov=src --cov-report=term-missing tests/
 
 # Execute Ragas evaluation benchmark
-python -m evals.run_benchmark --samples 50 --output evals/results/latest.json
+python -m evals.eval_runner --dataset evals/datasets/golden_bilingual_eval.json --output evals/results/latest.json
 
 # Run linting and type checking
-ruff check src tests
-ruff format --check src tests
-mypy src
+ruff check .
+ruff format --check .
+mypy .
 ```

@@ -1,6 +1,7 @@
 """Unit tests for domain exceptions and structured logging."""
 
 import json
+from typing import Any
 
 from src.common.exceptions import (
     BaseRAGException,
@@ -21,7 +22,7 @@ from src.common.logger import (
 )
 
 
-def test_base_rag_exception_problem_details():
+def test_base_rag_exception_problem_details() -> None:
     """Verify BaseRAGException produces valid RFC 7807 dictionary."""
     exc = BaseRAGException(
         message="Custom error message",
@@ -41,7 +42,7 @@ def test_base_rag_exception_problem_details():
     assert "timestamp" in problem
 
 
-def test_exception_subclasses_hierarchy():
+def test_exception_subclasses_hierarchy() -> None:
     """Verify specific exception subclasses inherit correctly and have proper status codes."""
     exceptions_to_check = [
         (DocumentParsingError(), 422, "ERR_DOCUMENT_PARSING"),
@@ -61,7 +62,7 @@ def test_exception_subclasses_hierarchy():
         assert details["code"] == expected_code
 
 
-def test_trace_id_contextvars():
+def test_trace_id_contextvars() -> None:
     """Verify trace_id context variable getters, setters, and clean up."""
     clear_trace_id()
     assert get_trace_id() is None
@@ -74,7 +75,7 @@ def test_trace_id_contextvars():
     assert get_trace_id() is None
 
 
-def test_inject_trace_id_processor():
+def test_inject_trace_id_processor() -> None:
     """Verify structlog processor correctly injects trace_id when set."""
     clear_trace_id()
     event_dict = {"event": "test_event"}
@@ -87,7 +88,7 @@ def test_inject_trace_id_processor():
     clear_trace_id()
 
 
-def test_logger_json_output(capsys):
+def test_logger_json_output(capsys: Any) -> None:
     """Verify structured logger formats events as valid JSON containing trace_id."""
     configure_logger(log_level="DEBUG", json_format=True)
     logger = get_logger("test_module")

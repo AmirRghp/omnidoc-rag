@@ -14,8 +14,8 @@ from src.ingestion.embedder import BGEEmbedder
 def mock_settings() -> Settings:
     """Fixture providing isolated Settings."""
     return Settings(
-        dense_model_name="BAAI/bge-m3",
-        embedding_dimension=1024,
+        DENSE_MODEL_NAME="BAAI/bge-m3",
+        EMBEDDING_DIMENSION=1024,
     )
 
 
@@ -60,8 +60,8 @@ class TestBGEEmbedderInference:
         mock_st_cls.assert_not_called()
 
         # Accessing property triggers instantiation
-        _ = embedder.model
-        assert embedder._model is not None
+        loaded_model = embedder.model
+        assert loaded_model is not None
         mock_st_cls.assert_called_once_with(
             model_name_or_path="BAAI/bge-m3",
             device="cpu",

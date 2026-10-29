@@ -60,6 +60,12 @@ class BM25StoreManager:
         self._chunks: list[DocumentChunkPayload] = []
         self._tokenized_corpus: list[list[str]] = []
         self._bm25: BM25Okapi | None = None
+        self._dirty: bool = False
+
+    @property
+    def signature_path(self) -> Path:
+        """Return path to the SHA-256 integrity sidecar file."""
+        return self.index_path.with_suffix(f"{self.index_path.suffix}.sha256")
 
     @property
     def chunk_count(self) -> int:
@@ -102,6 +108,7 @@ class BM25StoreManager:
 
         self._chunks = list(deduped.values())
         self._rebuild_in_memory_index()
+        self._dirty = True
 
         if persist:
             self.save()
@@ -139,6 +146,7 @@ class BM25StoreManager:
 
         self._chunks = list(existing_by_id.values())
         self._rebuild_in_memory_index()
+        self._dirty = True
 
         if persist:
             self.save()
@@ -169,6 +177,7 @@ class BM25StoreManager:
 
         if removed_count > 0:
             self._rebuild_in_memory_index()
+            self._dirty = True
             if persist:
                 self.save()
 
@@ -186,6 +195,11 @@ class BM25StoreManager:
         Returns:
             Path to the saved pickle index file.
         """
+        if not self._dirty and self.index_path.is_file():
+            return self.index_path
+
+        import hashlib
+
         target_dir = self.index_path.parent
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -210,7 +224,10 @@ class BM25StoreManager:
                 tmp_file.flush()
                 os.fsync(tmp_file.fileno())
 
+            digest = hashlib.sha256(tmp_path.read_bytes()).hexdigest()
             os.replace(tmp_path, self.index_path)
+            self.signature_path.write_text(digest, encoding="utf-8")
+            self._dirty = False
             logger.debug(
                 "bm25_index_saved_atomically",
                 index_path=str(self.index_path),
@@ -223,10 +240,13 @@ class BM25StoreManager:
             raise
 
     def load(self) -> bool:
-        """Load the persisted BM25 index from disk if it exists.
+        """Load the persisted BM25 index from disk if it exists, verifying SHA-256 integrity.
 
         Returns:
             True if the index was loaded, False if the index file does not exist.
+
+        Raises:
+            ValueError: If the SHA-256 sidecar exists and does not match the index file bytes.
         """
         if not self.index_path.is_file():
             logger.warning(
@@ -235,8 +255,19 @@ class BM25StoreManager:
             )
             return False
 
-        with open(self.index_path, "rb") as f:
-            data: dict[str, Any] = pickle.load(f)
+        import hashlib
+        import hmac
+
+        raw_bytes = self.index_path.read_bytes()
+        if self.signature_path.is_file():
+            expected_digest = self.signature_path.read_text(encoding="utf-8").strip()
+            actual_digest = hashlib.sha256(raw_bytes).hexdigest()
+            if expected_digest and not hmac.compare_digest(expected_digest, actual_digest):
+                raise ValueError(
+                    f"BM25 index integrity check failed for '{self.index_path}': SHA-256 mismatch."
+                )
+
+        data: dict[str, Any] = pickle.loads(raw_bytes)
 
         raw_chunks = data.get("chunks", [])
         self._chunks = [
@@ -253,6 +284,7 @@ class BM25StoreManager:
         else:
             self._bm25 = None
 
+        self._dirty = False
         logger.info(
             "bm25_index_loaded",
             index_path=str(self.index_path),

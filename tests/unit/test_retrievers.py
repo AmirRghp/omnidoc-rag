@@ -198,7 +198,7 @@ class TestDenseRetriever:
 
         mock_client = MagicMock()
         mock_client.query_points = AsyncMock(
-            side_effect=ResponseHandlingException("Host unreachable")
+            side_effect=ResponseHandlingException(RuntimeError("Host unreachable"))
         )
 
         retriever = DenseRetriever(
@@ -218,7 +218,7 @@ class TestDenseRetriever:
 
         mock_client = MagicMock()
         mock_client.query_points = AsyncMock(
-            side_effect=ResponseHandlingException("Host unreachable")
+            side_effect=ResponseHandlingException(RuntimeError("Host unreachable"))
         )
 
         retriever = DenseRetriever(

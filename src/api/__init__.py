@@ -9,7 +9,7 @@ from src.api.errors import (
     unhandled_exception_handler,
     validation_exception_handler,
 )
-from src.api.routes import format_sse, router, tokenize_generation_stream
+from src.api.routes import format_sse, router
 from src.api.schemas import (
     FeedbackRating,
     FeedbackRequest,
@@ -21,6 +21,7 @@ from src.api.schemas import (
     QueryResponse,
     ReflectionStatus,
 )
+from src.common.security import tokenize_generation_stream
 
 __all__ = [
     "FeedbackRating",

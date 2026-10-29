@@ -40,6 +40,13 @@ class TestNormalizePersianText:
         normalized = normalize_persian_text(raw)
         assert normalized == "Fix ERR_DB_TIMEOUT with --ipc=host in /var/run/docker.sock کد ۵۰۲"
 
+    def test_applies_unicode_nfc_canonical_normalization(self) -> None:
+        """Decomposed NFD characters are canonically composed via NFC."""
+        decomposed = "e\u0301"  # 'e' + combining acute accent
+        normalized = normalize_persian_text(decomposed)
+        assert normalized == "\u00e9"
+
+
 
 class TestStripDirectionalOverrides:
     """Tests for stripping bidirectional override and invisible control characters."""

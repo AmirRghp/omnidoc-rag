@@ -254,7 +254,7 @@ class TestCRAGWorkflowAssembly:
         assert final_state["citations"] == []
         assert final_state["refusal_reason"] == "insufficient_context"
         # LLM generate was only called once (for query rewrite, NOT for answer generation)
-        assert crag_nodes.llm.generate.await_count == 1  # type: ignore[attr-defined]
+        assert crag_nodes.llm.generate.await_count == 1
 
     @pytest.mark.asyncio
     async def test_workflow_incorrect_path_refuses_immediately(
@@ -277,7 +277,7 @@ class TestCRAGWorkflowAssembly:
         assert final_state["relevance_status"] == "incorrect"
         assert final_state["citations"] == []
         assert "مستندات" in final_state["generation"] or "موجود نیست" in final_state["generation"]
-        crag_nodes.llm.generate.assert_not_awaited()  # type: ignore[attr-defined]
+        crag_nodes.llm.generate.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_workflow_compiles_with_checkpointer_and_persists_state(
@@ -301,11 +301,11 @@ class TestCRAGWorkflowAssembly:
             checkpointer=memory,
         )
 
-        config: dict[str, Any] = {"configurable": {"thread_id": "thread-test-123"}}
+        config: Any = {"configurable": {"thread_id": "thread-test-123"}}
         initial_state = create_initial_state("How to configure IPC?", trace_id="trace-123")
-        final_state = await app.ainvoke(initial_state, config=config)  # type: ignore[arg-type]
+        final_state = await app.ainvoke(initial_state, config=config)
 
-        saved_snapshot = await app.aget_state(config)  # type: ignore[arg-type]
+        saved_snapshot = await app.aget_state(config)
         assert saved_snapshot.values["trace_id"] == "trace-123"
         assert saved_snapshot.values["generation"] == final_state["generation"]
 

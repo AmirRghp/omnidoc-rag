@@ -6,7 +6,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.dependencies import get_settings
 from src.api.errors import register_exception_handlers
+from src.api.middleware import RateLimitMiddleware, TraceIDMiddleware
 from src.api.routes import router as api_router
 from src.common.config import Settings, create_settings
 from src.common.logger import configure_logger, get_logger
@@ -47,8 +49,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    if settings is not None:
+        app.dependency_overrides[get_settings] = lambda: app_settings
+
     # Register RFC 7807 global exception handlers
     register_exception_handlers(app)
+
+    # Register Trace ID cleanup and sliding-window rate limit middlewares
+    app.add_middleware(RateLimitMiddleware, settings=app_settings)
+    app.add_middleware(TraceIDMiddleware)
 
     # Configure CORS policy based on environment
     allowed_origins = (
@@ -78,6 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {
             "status": "healthy",
             "environment": app_settings.environment,
+            "version": "0.1.0",
         }
 
     return app

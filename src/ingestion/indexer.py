@@ -76,9 +76,12 @@ class IngestionPipeline:
 
     @property
     def bm25_store(self) -> BM25StoreManager:
-        """Get or lazily instantiate BM25StoreManager."""
+        """Get or lazily instantiate BM25StoreManager, loading existing index from disk."""
         if self._bm25_store is None:
-            self._bm25_store = BM25StoreManager()
+            store = BM25StoreManager()
+            if store.index_path.is_file():
+                store.load()
+            self._bm25_store = store
         return self._bm25_store
 
     def ingest_file(

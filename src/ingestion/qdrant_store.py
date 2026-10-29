@@ -14,6 +14,39 @@ from src.common.schemas import DocumentChunkPayload
 logger = get_logger(__name__)
 
 
+def resolve_qdrant_https(settings: Settings) -> bool | None:
+    """Resolve HTTPS flag for Qdrant connections, defaulting to False on localhost."""
+    if settings.qdrant_https is not None:
+        return settings.qdrant_https
+    if settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"}:
+        return False
+    return None
+
+
+def create_qdrant_client(settings: Settings) -> QdrantClient:
+    """Create a synchronous QdrantClient from application settings."""
+    return QdrantClient(
+        host=settings.qdrant_host,
+        port=settings.qdrant_port,
+        grpc_port=settings.qdrant_grpc_port,
+        api_key=settings.qdrant_api_key,
+        https=resolve_qdrant_https(settings),
+        prefer_grpc=False,
+    )
+
+
+def create_async_qdrant_client(settings: Settings) -> AsyncQdrantClient:
+    """Create an asynchronous AsyncQdrantClient from application settings."""
+    return AsyncQdrantClient(
+        host=settings.qdrant_host,
+        port=settings.qdrant_port,
+        grpc_port=settings.qdrant_grpc_port,
+        api_key=settings.qdrant_api_key,
+        https=resolve_qdrant_https(settings),
+        prefer_grpc=False,
+    )
+
+
 class QdrantStoreManager:
     """Manages collection lifecycle and batched idempotent upserts in Qdrant."""
 
@@ -41,45 +74,14 @@ class QdrantStoreManager:
     def client(self) -> QdrantClient:
         """Get or create synchronous QdrantClient."""
         if self._client is None:
-            https = self.settings.qdrant_https
-            if https is None:
-                # If host is localhost/127.0.0.1, default to HTTP (no SSL) even if an API key is set
-                https = (
-                    False
-                    if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"}
-                    else None
-                )
-
-            self._client = QdrantClient(
-                host=self.settings.qdrant_host,
-                port=self.settings.qdrant_port,
-                grpc_port=self.settings.qdrant_grpc_port,
-                api_key=self.settings.qdrant_api_key,
-                https=https,
-                prefer_grpc=False,
-            )
+            self._client = create_qdrant_client(self.settings)
         return self._client
 
     @property
     def async_client(self) -> AsyncQdrantClient:
         """Get or create asynchronous AsyncQdrantClient."""
         if self._async_client is None:
-            https = self.settings.qdrant_https
-            if https is None:
-                https = (
-                    False
-                    if self.settings.qdrant_host in {"localhost", "127.0.0.1", "0.0.0.0"}
-                    else None
-                )
-
-            self._async_client = AsyncQdrantClient(
-                host=self.settings.qdrant_host,
-                port=self.settings.qdrant_port,
-                grpc_port=self.settings.qdrant_grpc_port,
-                api_key=self.settings.qdrant_api_key,
-                https=https,
-                prefer_grpc=False,
-            )
+            self._async_client = create_async_qdrant_client(self.settings)
         return self._async_client
 
     def ensure_collection_exists(self) -> bool:
@@ -120,17 +122,26 @@ class QdrantStoreManager:
                 ),
             )
 
-            # Create payload indexes on critical query/filter fields
-            for field in ["doc_id", "source_file", "language"]:
+            # Create payload indexes on all schema fields per docs/DATABASE.md §3.1
+            payload_index_specs: list[tuple[str, models.PayloadSchemaType]] = [
+                ("doc_id", models.PayloadSchemaType.KEYWORD),
+                ("chunk_id", models.PayloadSchemaType.INTEGER),
+                ("source_file", models.PayloadSchemaType.KEYWORD),
+                ("section_heading", models.PayloadSchemaType.KEYWORD),
+                ("language", models.PayloadSchemaType.KEYWORD),
+                ("token_count", models.PayloadSchemaType.INTEGER),
+                ("created_at", models.PayloadSchemaType.DATETIME),
+            ]
+            for field_name, field_schema in payload_index_specs:
                 self.client.create_payload_index(
                     collection_name=self.collection_name,
-                    field_name=field,
-                    field_schema=models.PayloadSchemaType.KEYWORD,
+                    field_name=field_name,
+                    field_schema=field_schema,
                 )
                 logger.debug(
                     "created_payload_index",
                     collection=self.collection_name,
-                    field=field,
+                    field=field_name,
                 )
 
             return True

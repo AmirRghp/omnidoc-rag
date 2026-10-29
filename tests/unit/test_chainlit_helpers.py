@@ -218,6 +218,7 @@ def test_build_citation_elements_and_pills() -> None:
     assert first_el.display == "side"
     assert "docker_networking_bridge.md" in first_el.name
     assert "chunk-0" in first_el.name
+    assert isinstance(first_el.content, str)
     assert "Bridge Network Overview" in first_el.content
     assert "0.912" in first_el.content
     assert "Bridge networks apply" in first_el.content
@@ -279,7 +280,7 @@ async def test_on_message_happy_path_streams_steps_tokens_and_citations() -> Non
         patch("app.cl.Action", FakeAction),
         patch("app.get_crag_workflow", return_value=mock_workflow),
     ):
-        await app.on_message(incoming_msg)  # type: ignore[arg-type]
+        await app.on_message(incoming_msg)
 
     step_names = [s.name for s in FakeStep.instances]
     assert app.STEP_RETRIEVAL_NAME in step_names
@@ -341,7 +342,7 @@ async def test_on_message_ambiguous_rewrite_flow() -> None:
         patch("app.cl.Action", FakeAction),
         patch("app.get_crag_workflow", return_value=mock_workflow),
     ):
-        await app.on_message(incoming_msg)  # type: ignore[arg-type]
+        await app.on_message(incoming_msg)
 
     assistant_msgs = [m for m in FakeMessage.instances if m is not incoming_msg]
     assert len(assistant_msgs) == 1
@@ -382,7 +383,7 @@ async def test_on_message_refusal_flow_and_invalid_input() -> None:
         patch("app.cl.Action", FakeAction),
         patch("app.get_crag_workflow", return_value=mock_workflow),
     ):
-        await app.on_message(incoming_msg)  # type: ignore[arg-type]
+        await app.on_message(incoming_msg)
 
     assistant_msgs = [m for m in FakeMessage.instances if m is not incoming_msg]
     assert len(assistant_msgs) == 1
@@ -394,7 +395,7 @@ async def test_on_message_refusal_flow_and_invalid_input() -> None:
     FakeMessage.instances.clear()
     empty_msg = FakeMessage(content="   ")
     with patch("app.cl.Message", FakeMessage):
-        await app.on_message(empty_msg)  # type: ignore[arg-type]
+        await app.on_message(empty_msg)
 
     error_replies = [m for m in FakeMessage.instances if m is not empty_msg]
     assert len(error_replies) == 1
@@ -411,7 +412,7 @@ async def test_on_feedback_action_records_feedback() -> None:
     action.remove = AsyncMock()  # type: ignore[attr-defined]
 
     with patch("app.cl.Message", FakeMessage):
-        await app.on_feedback_action(action)  # type: ignore[arg-type]
+        await app.on_feedback_action(action)
 
     assert len(FakeMessage.instances) == 1
     assert "ثبت شد" in FakeMessage.instances[0].content

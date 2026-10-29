@@ -16,8 +16,8 @@ from src.ingestion.qdrant_store import QdrantStoreManager
 def mock_settings() -> Settings:
     """Fixture providing isolated Settings."""
     return Settings(
-        collection_name="test_tech_docs",
-        embedding_dimension=1024,
+        COLLECTION_NAME="test_tech_docs",
+        EMBEDDING_DIMENSION=1024,
     )
 
 
@@ -74,11 +74,19 @@ class TestEnsureCollectionExists:
         assert kwargs["hnsw_config"].ef_construct == 100
         assert kwargs["optimizers_config"].default_segment_number == 2
 
-        # Verify payload indexes creation
-        assert mock_client.create_payload_index.call_count == 3
+        # Verify payload indexes creation per docs/DATABASE.md §3.1
+        assert mock_client.create_payload_index.call_count == 7
         calls = mock_client.create_payload_index.call_args_list
         indexed_fields = [call.kwargs["field_name"] for call in calls]
-        assert indexed_fields == ["doc_id", "source_file", "language"]
+        assert indexed_fields == [
+            "doc_id",
+            "chunk_id",
+            "source_file",
+            "section_heading",
+            "language",
+            "token_count",
+            "created_at",
+        ]
 
     def test_skips_creation_when_already_exists(self, mock_settings: Settings) -> None:
         mock_client = MagicMock()
@@ -222,7 +230,7 @@ class TestCollectionInfoAndDelete:
     ) -> None:
         mock_client = MagicMock()
         mock_client.get_collection.side_effect = UnexpectedResponse(
-            500, "Internal Server Error", "error", None
+            500, "Internal Server Error", b"error", MagicMock()
         )
         manager = QdrantStoreManager(client=mock_client, settings=mock_settings)
         with pytest.raises(VectorStoreTimeoutError, match="Qdrant error"):

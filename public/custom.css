@@ -12,7 +12,13 @@
   --surface-hover: #1E293B;
   --border-dark: #1E293B;
   --text-dark: #F1F5F9;
-  --text-muted: #94A3B8;
+  --text-muted: #CBD5E1;
+
+  /* Light Theme Palette */
+  --bg-light: #F8FAFC;
+  --surface-light: #FFFFFF;
+  --border-light: #E2E8F0;
+  --text-light: #0F172A;
 
   /* Accent Colors */
   --primary-emerald: #10B981;
@@ -33,10 +39,22 @@ html,
 body,
 #root {
   font-family: var(--font-persian);
-  background-color: var(--bg-dark) !important;
-  color: var(--text-dark) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark,
+body.dark,
+[data-theme="dark"] {
+  background-color: var(--bg-dark) !important;
+  color: var(--text-dark) !important;
+}
+
+html.light,
+body.light,
+[data-theme="light"] {
+  background-color: var(--bg-light) !important;
+  color: var(--text-light) !important;
 }
 
 /* 3. Bi-directional (RTL / LTR) Content Rules */
@@ -77,6 +95,8 @@ div[class*="code-"] {
   border-radius: 8px !important;
   background-color: #0B101D !important;
   border: 1px solid var(--border-dark) !important;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 /* Inline code tags inside mixed Persian text */
@@ -132,17 +152,22 @@ div[class*="code-"] {
   direction: ltr;
   unicode-bidi: isolate;
   background-color: #1E293B;
-  color: #94A3B8;
+  color: #CBD5E1; /* WCAG AA >= 4.5:1 contrast against #1E293B */
   border: 1px solid #334155;
   margin: 0.2rem;
+  cursor: pointer;
   transition: all 0.15s ease-in-out;
 }
 
 .citation-pill:hover,
-.source-pill:hover {
+.source-pill:hover,
+.citation-pill:focus-visible,
+.source-pill:focus-visible {
   background-color: #334155;
   color: var(--primary-emerald);
   border-color: var(--primary-emerald);
+  outline: 2px solid var(--primary-emerald);
+  outline-offset: 2px;
 }
 
 /* 6. Chainlit Input & Search Box */
@@ -197,3 +222,31 @@ button[type="submit"]:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* 9. Responsive Mobile Breakpoints & Reduced Motion */
+@media (max-width: 768px) {
+  .citation-pill,
+  .source-pill {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  pre,
+  .code-block {
+    font-size: 0.82rem !important;
+    padding: 0.75rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

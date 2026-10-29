@@ -141,41 +141,49 @@ omnidoc-rag/
 │   └── Plans.md
 ├── evals/
 │   ├── __init__.py
-│   ├── generate_synthetic_data.py   # Ragas synthetic test set generator
-│   ├── run_benchmark.py             # Evaluation runner
-│   └── evaluate_metrics.py          # Metric calculations & table exporter
+│   ├── datasets/
+│   │   └── golden_bilingual_eval.json
+│   └── eval_runner.py               # Ragas benchmark evaluation runner & gate
 ├── src/
 │   ├── __init__.py
 │   ├── common/
 │   │   ├── config.py                # Pydantic Settings
 │   │   ├── exceptions.py            # Custom application exceptions
-│   │   └── logger.py                # Structured logging configuration
+│   │   ├── logger.py                # Structured logging configuration
+│   │   ├── schemas.py               # Domain Pydantic v2 schemas
+│   │   └── security.py              # Input sanitization, NFC normalization, context XML
 │   ├── ingestion/
+│   │   ├── bm25_store.py            # Persistent BM25s sparse index with SHA-256 integrity
 │   │   ├── chunker.py               # Section-aware markdown splitting
 │   │   ├── embedder.py              # BGE-M3 local inference
-│   │   └── indexer.py               # Qdrant upsert & BM25 builder
+│   │   ├── indexer.py               # Qdrant upsert & BM25 builder
+│   │   └── qdrant_store.py          # Qdrant client & payload index manager
 │   ├── retrieval/
 │   │   ├── dense.py                 # Qdrant vector search
 │   │   ├── sparse.py                # BM25 search
 │   │   ├── fusion.py                # RRF algorithm
 │   │   └── reranker.py              # BGE Cross-Encoder
 │   ├── graph/
-│   │   ├── state.py                 # LangGraph AgentState TypedDict
-│   │   ├── nodes.py                 # Retrieve, Grade, Rewrite, Generate
-│   │   └── workflow.py              # Graph compilation & entrypoint
+│   │   ├── state.py                 # LangGraph RAGState TypedDict
+│   │   ├── nodes.py                 # Retrieve, Grade, Rewrite, Generate, Reflect
+│   │   └── workflow.py              # Graph compilation & Redis cache integration
 │   ├── services/
-│   │   ├── cache_service.py         # Redis semantic & token caching
-│   │   └── llm_service.py           # vLLM async streaming client
-│   └── api/
-│       ├── routes.py                # FastAPI endpoints
-│       └── schemas.py               # Request/Response Pydantic models
+│   │   ├── cache.py                 # Redis semantic & query caching
+│   │   ├── llm_client.py            # vLLM async streaming client
+│   │   └── prompt_builder.py        # Bilingual system prompt & XML context builder
+│   ├── api/
+│   │   ├── dependencies.py          # Singleton DI, API key & RBAC verification
+│   │   ├── errors.py                # RFC 7807 Problem Details exception handlers
+│   │   ├── middleware.py            # TraceID & Sliding-Window RateLimit middlewares
+│   │   ├── routes.py                # FastAPI endpoints
+│   │   └── schemas.py               # Request/Response Pydantic models
+│   └── main.py                      # FastAPI application entrypoint
 ├── app.py                           # Chainlit frontend application
-├── main.py                          # FastAPI application entrypoint
-├── docker-compose.yml               # Qdrant, Redis, Postgres, Langfuse
-├── Dockerfile                       # App container definition
+├── docker-compose.yml               # Qdrant, Redis, vLLM, API, Chainlit UI
+├── Dockerfile                       # Hardened non-root app container definition
 ├── Makefile                         # dev, test, eval, up, down targets
 ├── pyproject.toml                   # Ruff, mypy, pytest configuration
-├── requirements.txt                 # Frozen production dependencies
+├── requirements.txt                 # Production dependencies
 ├── AGENTS.md                        # Master AI Agent Guidelines & Skills Routing
 ├── CLAUDE.md                        # Claude harness instructions
 ├── GEMINI.md                        # Gemini harness instructions

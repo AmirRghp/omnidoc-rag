@@ -2,10 +2,12 @@
 
 import hashlib
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+UTC = timezone.utc
 
 
 def generate_point_id(source_file: str, chunk_id: int) -> str:

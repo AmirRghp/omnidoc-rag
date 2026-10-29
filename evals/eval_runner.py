@@ -119,6 +119,26 @@ class RagasEvaluationReport(BaseModel):
     failed_metrics: list[str] = Field(default_factory=list)
     sample_scores: list[SampleMetricScores] = Field(default_factory=list)
 
+    @property
+    def mean_context_recall(self) -> float:
+        """Return aggregated context_recall score."""
+        return self.record.context_recall
+
+    @property
+    def mean_context_precision(self) -> float:
+        """Return aggregated context_precision score."""
+        return self.record.context_precision
+
+    @property
+    def mean_faithfulness(self) -> float:
+        """Return aggregated faithfulness score."""
+        return self.record.faithfulness
+
+    @property
+    def mean_answer_relevancy(self) -> float:
+        """Return aggregated answer_relevancy score."""
+        return self.record.answer_relevancy
+
 
 def load_golden_dataset(path: Path = DEFAULT_DATASET_PATH) -> list[GoldenEvalSample]:
     """Load and parse the golden bilingual evaluation JSON dataset."""
@@ -265,14 +285,21 @@ class RagasEvaluator:
         llm_client: VLLMClient | Any | None = None,
         settings: Settings | None = None,
         thresholds: RagasGateThresholds | None = None,
+        workflow: Any | None = None,
     ) -> None:
         """Initialize the Ragas evaluator."""
         self.settings = settings or create_settings()
         self.thresholds = thresholds or RagasGateThresholds()
+        self.workflow = workflow
         self.llm = llm_client or VLLMClient(
             model=DEFAULT_JUDGE_MODEL,
             settings=self.settings,
         )
+
+    @staticmethod
+    def load_dataset(path: Path = DEFAULT_DATASET_PATH) -> list[GoldenEvalSample]:
+        """Load the golden evaluation dataset from disk."""
+        return load_golden_dataset(path)
 
     @staticmethod
     def build_judge_messages(
@@ -309,10 +336,27 @@ class RagasEvaluator:
         generated_answer: str | None = None,
         retrieved_contexts: list[str] | None = None,
     ) -> SampleMetricScores:
-        """Compute Faithfulness, Answer Relevance, Context Precision, and Context Recall."""
+        """Compute Faithfulness, Answer Relevance, Context Precision, and Context Recall.
+
+        If `self.workflow` is provided and `generated_answer` / `retrieved_contexts` are
+        omitted, executes `await self.workflow.ainvoke(query=sample.query)` to evaluate
+        actual pipeline outputs rather than static ground_truth strings.
+        """
         start_time = time.perf_counter()
+        if self.workflow is not None and (generated_answer is None or retrieved_contexts is None):
+            state = await self.workflow.ainvoke(query=sample.query, language=sample.language)
+            if generated_answer is None:
+                generated_answer = str(state.get("generation", ""))
+            if retrieved_contexts is None:
+                chunks = state.get("reranked_chunks", [])
+                retrieved_contexts = [str(getattr(c, "content", c)) for c in chunks]
+
         answer = generated_answer if generated_answer is not None else sample.ground_truth
-        contexts = retrieved_contexts if retrieved_contexts is not None else sample.contexts
+        contexts = (
+            retrieved_contexts
+            if retrieved_contexts is not None and len(retrieved_contexts) > 0
+            else sample.contexts
+        )
 
         messages = self.build_judge_messages(
             sample=sample,

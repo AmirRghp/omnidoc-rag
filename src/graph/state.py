@@ -42,12 +42,18 @@ class RAGState(TypedDict, total=False):
     refusal_reason: str | None
     cache_hit: bool
     error: str | None
+    temperature: float
+    enable_reflection: bool
+    stream_tokens: bool
 
 
 def create_initial_state(
     query: str,
     trace_id: str | None = None,
     language: Literal["fa", "en"] | None = None,
+    temperature: float = 0.0,
+    enable_reflection: bool = True,
+    stream_tokens: bool = False,
 ) -> RAGState:
     """Create a fully-initialized RAGState dictionary with safe defaults.
 
@@ -55,6 +61,9 @@ def create_initial_state(
         query: Raw user query string.
         trace_id: Optional correlation/trace UUID string.
         language: Optional language override ("fa" or "en").
+        temperature: LLM generation sampling temperature.
+        enable_reflection: Whether CRAG query rewrite reflection is enabled.
+        stream_tokens: Whether to stream tokens directly from vLLM during generation.
 
     Returns:
         Fully initialized RAGState dictionary.
@@ -83,6 +92,9 @@ def create_initial_state(
         "refusal_reason": None,
         "cache_hit": False,
         "error": None,
+        "temperature": temperature,
+        "enable_reflection": enable_reflection,
+        "stream_tokens": stream_tokens,
     }
 
 

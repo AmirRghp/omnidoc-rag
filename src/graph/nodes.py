@@ -1,9 +1,14 @@
 """Atomic execution nodes for the LangGraph Corrective RAG (CRAG) control plane."""
 
 import asyncio
+from collections.abc import AsyncIterator
 from typing import Any
 
 from src.common.config import Settings, create_settings
+from src.common.exceptions import (
+    InferenceEngineUnavailableError,
+    VectorStoreTimeoutError,
+)
 from src.common.logger import get_logger
 from src.common.schemas import CitationItem, RetrievedChunk
 from src.graph.state import RAGState, RelevanceStatus
@@ -119,6 +124,8 @@ class CRAGNodes:
                 "retrieved_chunks": candidates,
                 "reranked_chunks": reranked,
             }
+        except (VectorStoreTimeoutError, InferenceEngineUnavailableError):
+            raise
         except Exception as exc:
             logger.error("Error during retrieval in retrieve_node: %s", exc, exc_info=True)
             return {
@@ -133,7 +140,8 @@ class CRAGNodes:
         Thresholds:
             score >= crag_correct_threshold (0.70): 'correct' -> generate
             crag_ambiguous_threshold (0.35) <= score < 0.70:
-                if transformation_count < max_query_transformations: 'ambiguous' -> rewrite
+                if enable_reflection and transformation_count < max_query_transformations:
+                    'ambiguous' -> rewrite
                 else: 'incorrect' -> refuse
             score < crag_ambiguous_threshold (0.35): 'incorrect' -> refuse
 
@@ -145,6 +153,7 @@ class CRAGNodes:
         """
         reranked_chunks = state.get("reranked_chunks", [])
         transformation_count = state.get("transformation_count", 0)
+        enable_reflection = state.get("enable_reflection", True)
 
         if not reranked_chunks:
             logger.info("No documents to grade; marking relevance_status as incorrect")
@@ -158,13 +167,14 @@ class CRAGNodes:
         if max_score >= self.settings.crag_correct_threshold:
             status: RelevanceStatus = "correct"
         elif max_score >= self.settings.crag_ambiguous_threshold:
-            if transformation_count < self.settings.max_query_transformations:
+            if enable_reflection and transformation_count < self.settings.max_query_transformations:
                 status = "ambiguous"
             else:
                 logger.info(
-                    "Query ambiguous (score=%.2f) but reached max transformations (%d); "
-                    "routing to refuse",
+                    "Query ambiguous (score=%.2f) with enable_reflection=%s or reached max "
+                    "transformations (%d); routing to refuse",
                     max_score,
+                    enable_reflection,
                     self.settings.max_query_transformations,
                 )
                 status = "incorrect"
@@ -220,6 +230,29 @@ class CRAGNodes:
                 "error": str(exc),
             }
 
+    async def stream_generate_tokens(
+        self,
+        query: str,
+        chunks: list[RetrievedChunk],
+        temperature: float = 0.0,
+    ) -> AsyncIterator[str]:
+        """Stream tokens incrementally from vLLM with post-generation guardrail verification.
+
+        Args:
+            query: User technical query.
+            chunks: Reranked context chunks.
+            temperature: Sampling temperature.
+
+        Yields:
+            Token deltas received from the vLLM streaming client.
+        """
+        messages = self.prompt_builder.build_generation_messages(query=query, chunks=chunks)
+        accumulated: list[str] = []
+        async for token in self.llm.stream_generate(messages, temperature=temperature):
+            accumulated.append(token)
+            self.prompt_builder.validate_output("".join(accumulated))
+            yield token
+
     async def generate_node(self, state: RAGState) -> dict[str, Any]:
         """Generate grounded technical answer using strict XML context enclosure.
 
@@ -231,6 +264,7 @@ class CRAGNodes:
         """
         query = state.get("query", "")
         chunks = state.get("reranked_chunks", [])
+        temperature = float(state.get("temperature", 0.0))
 
         citations: list[CitationItem] = []
         for chunk in chunks:
@@ -247,8 +281,20 @@ class CRAGNodes:
             )
 
         try:
+            if state.get("stream_tokens", False) and isinstance(self._llm_client, VLLMClient):
+                return {
+                    "generation": "",
+                    "citations": citations,
+                    "relevance_status": "correct",
+                    "token_stream": self.stream_generate_tokens(
+                        query=query,
+                        chunks=chunks,
+                        temperature=temperature,
+                    ),
+                }
+
             messages = self.prompt_builder.build_generation_messages(query=query, chunks=chunks)
-            raw_answer = await self.llm.generate(messages, temperature=0.0)
+            raw_answer = await self.llm.generate(messages, temperature=temperature)
             validated_answer = self.prompt_builder.validate_output(raw_answer)
 
             return {
@@ -256,6 +302,8 @@ class CRAGNodes:
                 "citations": citations,
                 "relevance_status": "correct",
             }
+        except (InferenceEngineUnavailableError, VectorStoreTimeoutError):
+            raise
         except Exception as exc:
             logger.error("Generation failed or blocked by output guardrails: %s", exc)
             language = state.get("language") or detect_query_language(query)

@@ -1,7 +1,9 @@
 """Domain exceptions conforming to RFC 7807 Problem Details."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
+
+UTC = timezone.utc
 
 
 class BaseRAGException(Exception):
@@ -152,3 +154,38 @@ class AuthenticationError(BaseRAGException):
             title="Authentication Failed",
             detail=detail,
         )
+
+
+class AuthorizationError(BaseRAGException):
+    """Raised when an authenticated caller lacks permissions for an admin endpoint."""
+
+    def __init__(
+        self,
+        message: str = "Insufficient permissions for this operation",
+        detail: str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code="ERR_FORBIDDEN",
+            status_code=403,
+            title="Forbidden",
+            detail=detail,
+        )
+
+
+class RateLimitExceededError(BaseRAGException):
+    """Raised when client IP exceeds sliding-window request rate limits."""
+
+    def __init__(
+        self,
+        message: str = "Rate limit exceeded",
+        detail: str | None = None,
+    ) -> None:
+        super().__init__(
+            message=message,
+            code="ERR_RATE_LIMIT_EXCEEDED",
+            status_code=429,
+            title="Too Many Requests",
+            detail=detail,
+        )
+

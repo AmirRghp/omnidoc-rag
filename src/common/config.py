@@ -1,5 +1,6 @@
 """Application configuration loader using Pydantic Settings and YAML fallback."""
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     # Server & Environment
@@ -32,6 +34,10 @@ class Settings(BaseSettings):
     app_host: str = Field(default="0.0.0.0", alias="APP_HOST")
     app_port: int = Field(default=8000, alias="APP_PORT")
     api_key: str = Field(default="dev_insecure_local_key_replace_in_prod", alias="API_KEY")
+    admin_api_key: str | None = Field(default=None, alias="ADMIN_API_KEY")
+    api_key_sha256: str | None = Field(default=None, alias="API_KEY_SHA256")
+    rate_limit_per_minute: int = Field(default=30, alias="RATE_LIMIT_PER_MINUTE")
+    upload_rate_limit_per_hour: int = Field(default=5, alias="UPLOAD_RATE_LIMIT_PER_HOUR")
 
     # Qdrant Vector Store
     qdrant_host: str = Field(default="localhost", alias="QDRANT_HOST")
@@ -64,13 +70,13 @@ class Settings(BaseSettings):
     rrf_k: int = Field(default=60, alias="RRF_K")
     rerank_top_n: int = Field(default=5, alias="RERANK_TOP_N")
     dense_model_name: str = Field(default="BAAI/bge-m3", alias="DENSE_MODEL_NAME")
-    rerank_model_name: str = Field(default="BAAI/bge-reranker-large", alias="RERANK_MODEL_NAME")
+    rerank_model_name: str = Field(default="BAAI/bge-reranker-v2-m3", alias="RERANK_MODEL_NAME")
     embedding_dimension: int = Field(default=1024, alias="EMBEDDING_DIMENSION")
 
     # CRAG Evaluation Thresholds
     crag_correct_threshold: float = Field(default=0.70, alias="CRAG_CORRECT_THRESHOLD")
     crag_ambiguous_threshold: float = Field(default=0.35, alias="CRAG_AMBIGUOUS_THRESHOLD")
-    max_query_transformations: int = Field(default=2, alias="MAX_QUERY_TRANSFORMATIONS")
+    max_query_transformations: int = Field(default=1, alias="MAX_QUERY_TRANSFORMATIONS")
 
     @field_validator(
         "qdrant_api_key",
@@ -78,6 +84,8 @@ class Settings(BaseSettings):
         "langfuse_public_key",
         "langfuse_secret_key",
         "qdrant_https",
+        "admin_api_key",
+        "api_key_sha256",
         mode="before",
     )
     @classmethod
@@ -95,10 +103,17 @@ class Settings(BaseSettings):
             raise ValueError(f"Threshold must be between 0.0 and 1.0, got {value}")
         return value
 
-    @field_validator("top_k_dense", "top_k_sparse", "rrf_k", "rerank_top_n")
+    @field_validator(
+        "top_k_dense",
+        "top_k_sparse",
+        "rrf_k",
+        "rerank_top_n",
+        "rate_limit_per_minute",
+        "upload_rate_limit_per_hour",
+    )
     @classmethod
     def validate_positive_integers(cls, value: int) -> int:
-        """Ensure retrieval hyperparameter counts are strictly positive."""
+        """Ensure retrieval and rate-limit hyperparameter counts are strictly positive."""
         if value <= 0:
             raise ValueError(f"Value must be positive, got {value}")
         return value
@@ -108,7 +123,10 @@ def create_settings(
     config_yaml_path: Path | None = None,
     **kwargs: Any,
 ) -> Settings:
-    """Instantiate Settings merging YAML configuration and environment variables."""
+    """Instantiate Settings merging YAML configuration and environment variables.
+
+    Precedence order: explicit kwargs > environment variables > YAML config > field defaults.
+    """
     yaml_path = config_yaml_path or Path("configs/config.yaml")
     yaml_data = load_yaml_config(yaml_path)
 
@@ -153,8 +171,15 @@ def create_settings(
         if "semantic_cache_enabled" in cache:
             flattened_yaml["semantic_cache_enabled"] = cache["semantic_cache_enabled"]
 
-    # kwargs take precedence over YAML defaults, while env vars are parsed by BaseSettings
-    merged = {**flattened_yaml, **kwargs}
+    # Filter out YAML keys that are already overridden in os.environ so env vars win over YAML
+    yaml_without_env_overrides: dict[str, Any] = {}
+    for field_name, val in flattened_yaml.items():
+        field_info = Settings.model_fields.get(field_name)
+        env_alias = (field_info.alias if field_info and field_info.alias else field_name).upper()
+        if env_alias not in os.environ and field_name.upper() not in os.environ:
+            yaml_without_env_overrides[field_name] = val
+
+    merged = {**yaml_without_env_overrides, **kwargs}
     return Settings(**merged)
 
 
@@ -165,3 +190,4 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
