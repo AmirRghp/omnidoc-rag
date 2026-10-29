@@ -102,9 +102,7 @@ async def test_admin_rbac_and_ingestion_endpoints(rbac_app: FastAPI) -> None:
         assert forbidden.json()["code"] == "ERR_FORBIDDEN"
 
         # Admin key succeeds with 202 Accepted
-        files_admin = {
-            "file": ("test_guide.md", io.BytesIO(md_bytes), "text/markdown")
-        }
+        files_admin = {"file": ("test_guide.md", io.BytesIO(md_bytes), "text/markdown")}
         accepted = await client.post(
             "/api/v1/ingest",
             files=files_admin,

@@ -188,4 +188,3 @@ class RateLimitExceededError(BaseRAGException):
             title="Too Many Requests",
             detail=detail,
         )
-

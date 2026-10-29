@@ -24,9 +24,7 @@ def test_default_settings() -> None:
     assert settings.collection_name == "tech_docs_bilingual"
 
 
-def test_create_settings_from_yaml(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_create_settings_from_yaml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify that YAML configuration file properly populates settings."""
     for env_key in ("ENVIRONMENT", "APP_HOST", "APP_PORT"):
         monkeypatch.delenv(env_key, raising=False)
@@ -107,4 +105,3 @@ def test_invalid_positive_integer_validation() -> None:
 
     with pytest.raises(ValidationError):
         Settings(RRF_K=-5)
-

@@ -271,4 +271,3 @@ class HealthResponse(BaseModel):
     status: Literal["healthy", "degraded"] = Field(default="healthy")
     environment: str = Field(default="development")
     version: str = Field(default="0.1.0")
-

@@ -94,8 +94,7 @@ async def verify_api_key(
         expected_sha256=settings.api_key_sha256,
     )
     is_valid_admin = bool(
-        settings.admin_api_key
-        and secrets.compare_digest(provided_token, settings.admin_api_key)
+        settings.admin_api_key and secrets.compare_digest(provided_token, settings.admin_api_key)
     )
 
     if not (is_valid_user or is_valid_admin):
@@ -133,4 +132,3 @@ async def verify_admin_api_key(
         )
 
     return provided_token
-

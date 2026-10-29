@@ -243,4 +243,3 @@ class TestBM25StoreManager:
         reader = BM25StoreManager(index_path=index_file)
         with pytest.raises(ValueError, match="BM25 index integrity check failed"):
             reader.load()
-

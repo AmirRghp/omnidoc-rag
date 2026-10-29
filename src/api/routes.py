@@ -507,4 +507,3 @@ async def api_v1_health_check(
         environment=settings.environment,
         version="0.1.0",
     )
-

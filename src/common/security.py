@@ -107,5 +107,3 @@ def sanitize_query(query: str, max_length: int = MAX_QUERY_LENGTH) -> str:
         )
 
     return normalized
-
-

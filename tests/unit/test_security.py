@@ -47,7 +47,6 @@ class TestNormalizePersianText:
         assert normalized == "\u00e9"
 
 
-
 class TestStripDirectionalOverrides:
     """Tests for stripping bidirectional override and invisible control characters."""
 
